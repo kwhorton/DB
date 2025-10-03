@@ -76,13 +76,17 @@
         </thead>
         <tbody>
             <tr>
-                <td>
-                    Away: {{ event.team1.team_name }}<br>
-                    Home: {{ event.team2.team_name }}
-                </td>
-                <td>{{ event.match_score[0] }} - {{ event.match_score[1] }}</td>
+                <td>Away: {{ event.team1.team_name }}</td>
+                <td>{{ event.match_score[0] }}</td>
                 {% for set in event.set_results %}
-                <td>{{ set[0] }} - {{ set[1] }} </td>
+                <td>{{ set[0] }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>Home: {{ event.team2.team_name }}</td>
+                <td>{{ event.match_score[1] }}</td>
+                {% for set in event.set_results %}
+                <td>{{ set[1] }}</td>
                 {% endfor %}
             </tr>
         </tbody>
