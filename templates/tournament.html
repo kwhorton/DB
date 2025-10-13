@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tournament Bracket</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .tournament-container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow-x: auto;
+        }
+
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .bracket-section {
+            margin-bottom: 40px;
+        }
+
+        .bracket-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+            padding: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 5px;
+        }
+
+        .losers-title {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .finals-title {
+            background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
+        }
+
+        .placement-title {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+        }
+
+        .bracket {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            min-height: 400px;
+            position: relative;
+        }
+
+        .round {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            min-height: 400px;
+            padding: 0 20px;
+        }
+
+        .round-title {
+            text-align: center;
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+
+        .match {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            margin: 10px 0;
+            min-width: 200px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .match:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .match-header {
+            background: #f8f9fa;
+            padding: 5px 10px;
+            border-bottom: 1px solid #ddd;
+            font-size: 11px;
+            color: #666;
+            font-weight: bold;
+        }
+
+        .team {
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eee;
+            transition: background 0.2s;
+        }
+
+        .team:last-child {
+            border-bottom: none;
+        }
+
+        .team:hover {
+            background: #f8f9fa;
+        }
+
+        .team-name {
+            font-weight: 500;
+            color: #333;
+            flex-grow: 1;
+        }
+
+        .team-score {
+            font-weight: bold;
+            color: #666;
+            margin-left: 10px;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .winner {
+            background: #e8f5e9;
+        }
+
+        .winner .team-name {
+            color: #2e7d32;
+            font-weight: bold;
+        }
+
+        .winner .team-score {
+            color: #2e7d32;
+        }
+
+        .tbd {
+            color: #999;
+            font-style: italic;
+        }
+
+        .grand-finals {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .grand-finals .match {
+            min-width: 250px;
+        }
+
+        .placement-matches {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+        }
+
+        .best-of {
+            font-size: 10px;
+            color: #999;
+            margin-left: 5px;
+        }
+
+        /* Responsive design */
+        @media (max-width: 1200px) {
+            .bracket {
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="tournament-container">
+        <h2>8-Team Double Elimination Tournament</h2>
+        <div id="tournamentBracket"></div>
+    </div>
+
+    <script>
+        const tournamentData = {{ tournament_data | tojson }};
+        
+        // Include the JavaScript from the artifact here
+    </script>
+</body>
+</html>
