@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tournament Bracket</title>
+    <title>Tournament Bracket - Week {{ tournament_data.week }}</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -185,15 +185,130 @@
     </style>
 </head>
 <body>
+    <div class="back-button">
+        <a href="{{ url_for('wkschedule', week=tournament_data.week) }}">← Back to Week {{ tournament_data.week }}</a>
+    </div>
+
     <div class="tournament-container">
-        <h2>8-Team Double Elimination Tournament</h2>
+        <h2>Week {{ tournament_data.week }} Tournament Bracket</h2>
         <div id="tournamentBracket"></div>
     </div>
 
     <script>
         const tournamentData = {{ tournament_data | tojson }};
         
-        // Include the JavaScript from the artifact here
+        function createMatchHTML(match, matchId, showGames = false) {
+            if (!match) {
+                return `
+                    <div class="match">
+                        <div class="match-header">${matchId}</div>
+                        <div class="team tbd">
+                            <span class="team-name">Not Played</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            const team1Won = match.winner === 1;
+            const team2Won = match.winner === 2;
+
+            return `
+                <div class="match" onclick="showMatchDetails(${matchId})">
+                    <div class="match-header">${matchId} <span class="best-of">(Best of 5)</span></div>
+                    <div class="team ${team1Won ? 'winner' : ''}">
+                        <span class="team-name">${match.team1_name}</span>
+                        <span class="team-score">${match.team1_score}</span>
+                    </div>
+                    <div class="team ${team2Won ? 'winner' : ''}">
+                        <span class="team-name">${match.team2_name}</span>
+                        <span class="team-score">${match.team2_score}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showMatchDetails(matchIndex) {
+            const match = tournamentData.matches[matchIndex];
+            if (!match || !match.games) return;
+            
+            alert(`Match ${matchIndex + 1} Details:\n${match.team1_name} vs ${match.team2_name}\nGames: ${match.games.length}`);
+        }
+
+        function renderTournament() {
+            const container = document.getElementById('tournamentBracket');
+            const m = tournamentData.matches;
+
+            container.innerHTML = `
+                <!-- Winners Bracket -->
+                <div class="bracket-section">
+                    <div class="bracket-title">Winners Bracket</div>
+                    <div class="bracket">
+                        <div class="round">
+                            <div class="round-title">Round 1</div>
+                            ${createMatchHTML(m[0], 'WB R1-1')}
+                            ${createMatchHTML(m[1], 'WB R1-2')}
+                            ${createMatchHTML(m[2], 'WB R1-3')}
+                            ${createMatchHTML(m[3], 'WB R1-4')}
+                        </div>
+                        <div class="round">
+                            <div class="round-title">Round 2</div>
+                            ${createMatchHTML(m[7], 'WB R2-1')}
+                            ${createMatchHTML(m[8], 'WB R2-2')}
+                        </div>
+                        <div class="round">
+                            <div class="round-title">Winners Final</div>
+                            ${createMatchHTML(m[13], 'Winners Final')}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Losers Bracket -->
+                <div class="bracket-section">
+                    <div class="bracket-title losers-title">Losers Bracket</div>
+                    <div class="bracket">
+                        <div class="round">
+                            <div class="round-title">Round 1</div>
+                            ${createMatchHTML(m[4], 'LB R1-1')}
+                            ${createMatchHTML(m[5], 'LB R1-2')}
+                        </div>
+                        <div class="round">
+                            <div class="round-title">Round 2</div>
+                            ${createMatchHTML(m[9], 'LB R2-1')}
+                            ${createMatchHTML(m[10], 'LB R2-2')}
+                        </div>
+                        <div class="round">
+                            <div class="round-title">Round 3</div>
+                            ${createMatchHTML(m[12], 'LB R3')}
+                        </div>
+                        <div class="round">
+                            <div class="round-title">Losers Final</div>
+                            ${createMatchHTML(m[14], 'Losers Final')}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grand Finals -->
+                <div class="bracket-section">
+                    <div class="bracket-title finals-title">Grand Finals</div>
+                    <div class="grand-finals">
+                        ${createMatchHTML(m[15], 'Grand Final')}
+                        ${m[16] ? createMatchHTML(m[16], 'Grand Final 2') : ''}
+                    </div>
+                </div>
+
+                <!-- Placement Matches -->
+                <div class="bracket-section">
+                    <div class="bracket-title placement-title">Placement Matches</div>
+                    <div class="placement-matches">
+                        ${createMatchHTML(m[11], '5th/6th Place')}
+                        ${createMatchHTML(m[6], '7th/8th Place')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Initialize
+        renderTournament();
     </script>
 </body>
 </html>

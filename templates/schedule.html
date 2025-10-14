@@ -56,7 +56,7 @@
 <script>
     function changeWeek() {
         const week = document.getElementById('weekSelect').value;
-        window.location.href = "{{ url_for('wkschedule', week='WEEK_PLACEHOLDER') }}".replace('WEEK_PLACEHOLDER', week);
+        window.location.href = "{{ url_for('schedule', week='WEEK_PLACEHOLDER') }}".replace('WEEK_PLACEHOLDER', week);
     }
 </script>
 
@@ -156,7 +156,7 @@
                 </li>
                 {% endfor %}
             </ul>
-            <button class="view-bracket-btn" onclick="window.location.href='{{ url_for('view_tournament', tournament_id='0') }}'">
+            <button class="view-bracket-btn" onclick="window.location.href='{{ url_for('view_tournament', tournament_id=tournament.id) }}'">
                 View Bracket
             </button>
         </div>
@@ -165,71 +165,6 @@
 
 {% else %}
     <!-- Regular Match Tables View -->
-    <style>
-        /* Basic styles for the menu */
-        .menu {
-            background-color: #333;
-            overflow: hidden;
-        }
-
-        .menu a {
-            float: left;
-            display: block;
-            color: white;
-            text-align: center;
-            padding: 14px 16px;
-            text-decoration: none;
-        }
-
-        .menu a:hover {
-            background-color: #ddd;
-            color: black;
-        }
-
-        /* Styles for individual match/tourney tables */
-        .event-table {
-            border-collapse: collapse;
-            /*width: 50%;  Adjust as needed */
-            margin-bottom: 20px; /* Space between tables */
-        }
-
-        .event-table th:first-child,
-        .event-table td:first-child {
-            border: 1px solid black;
-            padding: 8px;
-            text-align: left;
-            width: 300px;
-        }
-
-        .event-table th:not(:first-child),
-        .event-table td:not(:first-child) {
-            border: 1px solid black;
-            padding: 8px;
-            text-align: left;
-            width: 80px;
-        }
-
-        .event-table th {
-            background-color: #f2f2f2;
-        }
-        /* Style for the week selection dropdown */
-        #week-selector {
-            margin-bottom: 20px;
-        }
-    </style>
-    </head>
-    <body>
-    <div class="menu">
-        <a href="/">Home</a>
-        <a href="/wkschedule">Week Schedule</a>
-    </div>
-
-    <h1>All Matches/Tournaments</h1>
-
-    
-
-    
-
     {% for event in events %}
     <table class="event-table" data-game-index="0" data-mode="hidden">
         <thead>
@@ -500,25 +435,4 @@
     }
 
     </script>
-
-    <style>
-    .toggle-scores, .next_game, .reset-game {
-        padding: 5px 10px;
-        margin: 2px;
-        cursor: pointer;
-        border: 1px solid #ccc;
-        border-radius: 3px;
-        background-color: #f0f0f0;
-        font-size: 12px;
-    }
-
-    .toggle-scores:hover, .next-game:hover, .reset-game:hover {
-        background-color: #e0e0e0;
-    }
-
-    .next-game:disabled {
-        background-color: #ddd;
-        cursor: not-allowed;
-    </style>
-
 {% endif %}
