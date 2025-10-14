@@ -12,6 +12,9 @@ with open("season.pkl","rb") as f:
     teams = pickle.load(f)
     schedule = pickle.load(f)
     all_tourneys = pickle.load(f)
+
+for idx, tourney in enumerate(all_tourneys):
+    tourney.id = idx
         
 app = Flask(__name__)
 
@@ -29,35 +32,60 @@ def team_results(team_name):
     return render_template("team_results.html",team_name=team_name, table = results_html)
 
 
-@app.route("/wkschedule", methods=['GET', 'POST'])
-def wkschedule():
-    selected_week = request.args.get('week', default = 1., type = float)
+#@app.route("/wkschedule", methods=['GET', 'POST'])
 
-    filtered_schedule = [match for match in schedule if match.week==selected_week]
-    return render_template("wkschedule.html", events = filtered_schedule, selected_week = selected_week)
+@app.route("/schedule")
+@app.route("/schedule/<week>")
+
+#def wkschedule():
+def wkschedule(week = None):
+    if week is None:
+        week= '1'
+
+    #selected_week = request.args.get('week', default = 1., type = float)
+    week_num = float(week)
+    
+    #if selected_week in [1, 1.5, 2, 2.5]:
+    if week_num in [1, 1.5, 2, 2.5]:
+        filtered_schedule = [match for match in schedule if match.week==week_num]
+        #return render_template("wkschedule.html", events = filtered_schedule, selected_week = selected_week)
+        return render_template('wkschedule.html', week = week_num, is_tournament = False, events = filtered_schedule)
+
+
+    else:
+        tournaments = []
+        for tourney in all_tourneys:
+            if tourney.week == week_num:
+                tourney_info = {
+                    'id': tourney.id,  # Use the actual ID
+                    'teams': [team.team_name for team in tourney.team_list]
+                }
+                tournaments.append(tourney_info)
+        return render_template('wkschedule.html', week= week_num, is_tournament = True, tournaments = tournaments)
+
 
 @app.route('/tournament/<int:tournament_id>')
-def show_tournament(tournament_id):
+def view_tournament(tournament_id):
+
     tourney = all_tourneys[tournament_id]
-    
     # Prepare tournament data
     tournament_data = {
+        'week': tourney.week,
         'teams': [
             {'seed': i+1, 'name': team.team_name} 
-            for i, team in enumerate(tourney.teams)
+            for i, team in enumerate(tourney.team_list)
         ],
         'matches': []
     }
     
-    # Add all matches in order
     for match in tourney.matches:
-        if match:  # Handle case where match might be None (like GF2)
+        if match:
             match_data = {
                 'team1_name': match.team1.team_name,
                 'team2_name': match.team2.team_name,
                 'team1_score': match.match_score[0],
                 'team2_score': match.match_score[1],
-                'winner': match.winner,  # 1 or 2
+                'winner': match.winner,
                 'games': [{'winner': game.winner} for game in match.games]
             }
             tournament_data['matches'].append(match_data)
@@ -65,6 +93,7 @@ def show_tournament(tournament_id):
             tournament_data['matches'].append(None)
     
     return render_template('tournament.html', tournament_data=tournament_data)
+
 
 
 if __name__ == "__main__":
