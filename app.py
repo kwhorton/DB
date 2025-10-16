@@ -23,13 +23,46 @@ app.config["TEMPLATES_AUTO_RELOAD"] = True
 @app.route("/")
 
 def index():
-    standings_html = standings(teams,schedule,all_tourneys,16)
-    return render_template("index.html", table=standings_html)
+    standings_data = get_standings_by_division(teams, schedule, all_tourneys, 16)
+    return render_template("index.html", standings_data=standings_data)
 
-@app.route("/team_name/<team_name>")
-def team_results(team_name):
-    results_html = results(team_name,teams,schedule,all_tourneys,16)
-    return render_template("team_results.html",team_name=team_name, table = results_html)
+@app.route('/team/<team_name>')
+def team_page(team_name):
+    # Get the team object
+    team = [team for team in teams if team.team_name == team_name][0]
+    
+    # Get current week (you'll need to determine this based on your app logic)
+    #current_week = get_current_week()  # Implement this based on your needs
+    current_week = 16
+    
+    # Get results HTML using your existing function
+    results_html = results(team_name, teams, schedule, all_tourneys, current_week)
+    
+    # Get player roster
+    players = []
+    for player in team.players:
+        stats = [player.aim, player.speed, player.hands, player.throw]
+        avg_stats = sum(stats)/len(stats)
+
+        gp_total = 0
+        for stat in player.all_stats:
+            if stat['Week'] <= current_week:
+                gp_total += stat['GP']
+                
+        players.append({
+            'pid': player.pid,
+            'avg_stats': avg_stats,
+            'aim': player.aim,
+            'speed': player.speed,
+            'throw': player.throw,
+            'hands': player.hands,
+            'games_played': gp_total
+            })
+    
+    return render_template('team.html',
+                         team=team,
+                         players=players,
+                         results_html=results_html)
 
 
 #@app.route("/wkschedule", methods=['GET', 'POST'])

@@ -42,3 +42,6 @@ def results(team_name,teams,schedule,all_tourneys,week):
 
     return results_html
             
+
+
+
