@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ team.team_name }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .team-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .back-button {
+            margin-bottom: 20px;
+        }
+
+        .back-button a {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .back-button a:hover {
+            background: #5568d3;
+        }
+
+        .team-header {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .team-header h1 {
+            margin: 0;
+            color: #333;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .roster-section, .results-section {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .section-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .player-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .player-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s;
+            cursor: pointer;
+        }
+
+        .player-item:hover {
+            background: #f8f9fa;
+        }
+
+        .player-item:last-child {
+            border-bottom: none;
+        }
+
+        .player-name {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .player-id {
+            font-size: 12px;
+            color: #999;
+            background: #f0f0f0;
+            padding: 3px 8px;
+            border-radius: 3px;
+        }
+
+        .no-data {
+            text-align: center;
+            color: #999;
+            padding: 30px;
+            font-style: italic;
+        }
+
+        /* Style the pandas DataFrame table */
+        .results-section table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .results-section table th {
+            background: #f8f9fa;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+            color: #555;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .results-section table td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .results-section table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .results-section table {
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="team-container">
+        <div class="back-button">
+            <a href="/">← Back to Home</a>
+        </div>
+
+        <div class="team-header">
+            <h1>{{ team.team_name }}</h1>
+        </div>
+
+        <div class="content-grid">
+            <!-- Roster Section -->
+            <div class="roster-section">
+                <div class="section-title">Roster ({{ players|length }} Players)</div>
+                {% if players %}
+                <style>
+                    .player-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin-top: 15px;
+                    }
+
+                    .player-table th {
+                        background: #f8f9fa;
+                        padding: 12px;
+                        text-align: left;
+                        font-weight: bold;
+                        color: #555;
+                        border-bottom: 2px solid #ddd;
+                        font-size: 13px;
+                    }
+
+                    .player-table td {
+                        padding: 12px;
+                        border-bottom: 1px solid #eee;
+                        font-size: 14px;
+                    }
+
+                    .player-table tr:hover {
+                        background: #f8f9fa;
+                    }
+
+                    .player-table tbody tr:last-child td {
+                        border-bottom: none;
+                    }
+
+                    .player-name-cell {
+                        font-weight: 500;
+                        color: #333;
+                        cursor: pointer;
+                        transition: color 0.2s;
+                    }
+
+                    .player-name-cell:hover {
+                        color: #667eea;
+                    }
+
+                    .stat-cell {
+                        text-align: center;
+                        color: #666;
+                    }
+
+                    .avg-stat {
+                        font-weight: bold;
+                        background: #f0f0f0;
+                        padding: 4px 8px;
+                        border-radius: 4px;
+                        display: inline-block;
+                        min-width: 45px;
+                    }
+
+                    .stat-breakdown {
+                        font-size: 12px;
+                        color: #999;
+                        margin-top: 4px;
+                    }
+                </style>
+                <table class="player-table">
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Avg Rating</th>
+                            <th>Games Played</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for player in players %}
+                        <tr onclick="window.location.href='/player/{{ player.pid }}'">
+                            <td class = "player-name-cell">{{ player.pid }}</td>
+                            <td class="stat-cell">
+                                <div class="avg-stat">{{ "%.2f"|format(player.avg_stats) }}</div>
+                                <div class="stat-breakdown">(A:{{ "%.1f"|format(player.aim) }} S:{{ "%.1f"|format(player.speed) }} T:{{ "%.1f"|format(player.throw) }} H:{{ "%.1f"|format(player.hands) }})</div>
+                            </td>
+                            <td class="stat-cell"><strong>{{ player.games_played }}</strong></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="no-data">No players on roster</div>
+                {% endif %}
+            </div>
+
+            <!-- Results Section -->
+            <div class="results-section">
+                <div class="section-title">Team Results</div>
+                {{ results_html|safe }}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

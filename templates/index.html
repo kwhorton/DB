@@ -1,37 +1,141 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Standings</title>
     <style>
-        table {
-            border-collapse: collapse;
-            width: 100%;
-        }
-        th, td {
-            border: 1px solid black;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        /* Menu Styles */
-        .menu {
-            background-color: #333;
-            overflow: hidden;
-        }
-        .menu a {
-            float: left;
-            display: block;
-            color: white;
-            text-align: center;
-            padding: 14px 16px;
-            text-decoration: none;
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
         }
 
-        .menu a:hover {
-            background-color: #ddd;
-            color: black;
+        .standings-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .divisions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .divisions-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .division-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .division-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            font-size: 22px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .standings-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .standings-table th {
+            background: #f8f9fa;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+            color: #555;
+            border-bottom: 2px solid #ddd;
+            font-size: 14px;
+        }
+
+        .standings-table td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .standings-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .standings-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .rank {
+            font-weight: bold;
+            color: #667eea;
+            min-width: 30px;
+        }
+
+        .team-name {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .team-name a {
+            color: #667eea;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .team-name a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        .stat {
+            text-align: center;
+            color: #666;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #999;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        /* Column widths */
+        .col-rank {
+            width: 40px;
+        }
+
+        .col-team {
+            flex-grow: 1;
+        }
+
+        .col-rating {
+            width: 70px;
+        }
+
+        .col-score {
+            width: 60px;
+        }
+
+        .col-fp {
+            width: 50px;
+        }
+
+        .col-h2h {
+            width: 50px;
         }
     </style>
 </head>
@@ -40,7 +144,45 @@
         <a href="/">Home</a> <!-- Link back to the main page -->
         <a href="/schedule">Week Schedule</a>
     </div>
-    <h1>Current Standings</h1>
-    {{ table | safe }}
+</body>
+<body>
+    <div class="standings-container">
+        <h1>Standings</h1>
+        
+        <div class="divisions-grid">
+            {% for division, teams in standings_data.items() %}
+            <div class="division-card">
+                <div class="division-header">{{ division }}</div>
+                <table class="standings-table">
+                    <thead>
+                        <tr>
+                            <th class="col-rank">#</th>
+                            <th class="col-team">Team</th>
+                            <th class="col-rating">Rating</th>
+                            <th class="col-score">Score</th>
+                            <th class="col-fp">FP</th>
+                            <th class="col-h2h">H2H</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for team in teams %}
+                        <tr>
+                            <td class="rank">{{ loop.index }}</td>
+                            <td class="team-name">
+                                <a href="/team/{{ team.team_name }}">{{ team.team_name }}</a>
+                            </td>
+                            <td class="stat">{{ "%.2f"|format(team.rating) }}</td>
+                            <td class="stat">{{ team.score }}</td>
+                            <td class="stat">{{ team.fp }}</td>
+                            <td class="stat">{{ team.h2h }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
 </body>
 </html>
+
