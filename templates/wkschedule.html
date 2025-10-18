@@ -1,29 +1,4 @@
-<!-- Week Selector -->
-<div class="week-selector">
-    <label for="weekSelect">Select Week:</label>
-    <select id="weekSelect" onchange="changeWeek()">
-        <option value="1" {% if week == 1 %}selected{% endif %}>Week 1</option>
-        <option value="1.5" {% if week == 1.5 %}selected{% endif %}>Week 1.5</option>
-        <option value="2" {% if week == 2 %}selected{% endif %}>Week 2</option>
-        <option value="2.5" {% if week == 2.5 %}selected{% endif %}>Week 2.5</option>
-        <option value="3" {% if week == 3 %}selected{% endif %}>Week 3</option>
-        <option value="4" {% if week == 4 %}selected{% endif %}>Week 4</option>
-        <option value="5" {% if week == 5 %}selected{% endif %}>Week 5</option>
-        <option value="6" {% if week == 6 %}selected{% endif %}>Week 6</option>
-        <option value="7" {% if week == 7 %}selected{% endif %}>Week 7</option>
-        <option value="8" {% if week == 8 %}selected{% endif %}>Week 8</option>
-        <option value="9" {% if week == 9 %}selected{% endif %}>Week 9</option>
-        <option value="10" {% if week == 10 %}selected{% endif %}>Week 10</option>
-        <option value="11" {% if week == 11 %}selected{% endif %}>Week 11</option>
-        <option value="12" {% if week == 12 %}selected{% endif %}>Week 12</option>
-        <option value="13" {% if week == 13 %}selected{% endif %}>Week 13</option>
-        <option value="14" {% if week == 14 %}selected{% endif %}>Week 14</option>
-        <option value="15" {% if week == 15 %}selected{% endif %}>Week 15</option>
-        <option value="16" {% if week == 16 %}selected{% endif %}>Week 16</option>
-       
-       
-    </select>
-</div>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -320,9 +295,37 @@
 </head>
 <body>
     <div class="schedule-container">
+        {% extends "base.html" %}
+
+        {% block title %}Schedule{% endblock %}
+
+        {% block content %}
         <h1>Schedule</h1>
 
- 
+         <!-- Week Selector - This is SEPARATE from the global week -->
+        <div class="week-selector">
+            <label for="weekSelect">View Week:</label>
+            <select id="weekSelect" onchange="changeWeek()">
+                <option value="1" {% if week == 1 %}selected{% endif %}>Week 1</option>
+                <option value="1.5" {% if week == 1.5 %}selected{% endif %}>Week 1.5</option>
+                <option value="2" {% if week == 2 %}selected{% endif %}>Week 2</option>
+                <option value="2.5" {% if week == 2.5 %}selected{% endif %}>Week 2.5</option>
+                <option value="3" {% if week == 3 %}selected{% endif %}>Week 3</option>
+                <option value="4" {% if week == 4 %}selected{% endif %}>Week 4</option>
+                <option value="5" {% if week == 5 %}selected{% endif %}>Week 5</option>
+                <option value="6" {% if week == 6 %}selected{% endif %}>Week 6</option>
+                <option value="7" {% if week == 7 %}selected{% endif %}>Week 7</option>
+                <option value="8" {% if week == 8 %}selected{% endif %}>Week 8</option>
+                <option value="9" {% if week == 9 %}selected{% endif %}>Week 9</option>
+                <option value="10" {% if week == 10 %}selected{% endif %}>Week 10</option>
+                <option value="11" {% if week == 11 %}selected{% endif %}>Week 11</option>
+                <option value="12" {% if week == 12 %}selected{% endif %}>Week 12</option>
+                <option value="13" {% if week == 13 %}selected{% endif %}>Week 13</option>
+                <option value="14" {% if week == 14 %}selected{% endif %}>Week 14</option>
+                <option value="15" {% if week == 15 %}selected{% endif %}>Week 15</option>
+                <option value="16" {% if week == 16 %}selected{% endif %}>Week 16</option>
+            </select>
+        </div>
 
         <div class="page-title">Week {{ week }} Schedule</div>
 
@@ -593,12 +596,13 @@
             </script>
         {% endif %}
     </div>
-
+ 
     <script>
         function changeWeek() {
             const week = document.getElementById('weekSelect').value;
             window.location.href = "{{ url_for('wkschedule', week='WEEK_PLACEHOLDER') }}".replace('WEEK_PLACEHOLDER', week);
         }
     </script>
+   {% endblock %}
 </body>
 </html>

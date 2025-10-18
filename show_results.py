@@ -3,6 +3,7 @@ import pandas as pd
 def results(team_name,teams,schedule,all_tourneys,week):
     team_results = []
     end = (week>=3)*(week+1) + (week<3)*(2*week-2) + 1
+    end = int(end)
     tourney_types = ['Random','Random','Division','Division','Score','Random',
                  'Division','Division','Score','Random','Random','Score','Division',
                  'Division']

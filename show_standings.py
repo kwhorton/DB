@@ -4,7 +4,7 @@ def standings(teams,schedule,all_tourneys,week):
 
     standings = []
     end = (week>=3)*(week+1) + (week<3)*(2*week-2) + 1
-    
+    end = int(end)
     for team in teams:
 
         output = {'Team': team.team_name,
@@ -31,7 +31,7 @@ def get_standings_by_division(teams, schedule, all_tourneys, week):
     """Generate standings organized by division"""
     standings = []
     end = (week >= 3) * (week + 1) + (week < 3) * (2 * week - 2) + 1
-    
+    end = int(end)
     for team in teams:
         output = {
             'team_name': team.team_name,

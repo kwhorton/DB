@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, session
 import pandas as pd
 import matplotlib.pyplot as plt
 import io
@@ -17,23 +17,43 @@ for idx, tourney in enumerate(all_tourneys):
     tourney.id = idx
         
 app = Flask(__name__)
+app.secret_key = 'your_secret_key'  # Set a proper secret key
 
 app.config["TEMPLATES_AUTO_RELOAD"] = True
+
+@app.before_request
+def set_current_week():
+    # Get current week from session or default to 16
+    if 'current_week' not in session:
+        session['current_week'] = 16
+    
+    # Check if week is being changed
+    if request.args.get('set_week'):
+        session['current_week'] = float(request.args.get('set_week'))
+    
+    # Make it available to all templates
+    return None
+
+@app.context_processor
+def inject_current_week():
+    return {'current_week': session.get('current_week', 16)}
 
 @app.route("/")
 
 def index():
-    standings_data = get_standings_by_division(teams, schedule, all_tourneys, 16)
+    current_week = session.get('current_week', 16)
+    standings_data = get_standings_by_division(teams, schedule, all_tourneys, current_week)
     return render_template("index.html", standings_data=standings_data)
 
 @app.route('/team/<team_name>')
 def team_page(team_name):
+    current_week = session.get('current_week', 16)
+
+
     # Get the team object
     team = [team for team in teams if team.team_name == team_name][0]
     
-    # Get current week (you'll need to determine this based on your app logic)
-    #current_week = get_current_week()  # Implement this based on your needs
-    current_week = 16
+    
     
     # Get results HTML using your existing function
     results_html = results(team_name, teams, schedule, all_tourneys, current_week)
@@ -41,21 +61,24 @@ def team_page(team_name):
     # Get player roster
     players = []
     for player in team.players:
-        stats = [player.aim, player.speed, player.hands, player.throw]
-        avg_stats = sum(stats)/len(stats)
-
+        
         gp_total = 0
         for stat in player.all_stats:
             if stat['Week'] <= current_week:
                 gp_total += stat['GP']
+
+            if stat['Week'] == current_week:
+                stats = [stat['Aim'],stat['Speed'],stat['Throw'],stat['Hands']]
+        avg_stats = sum(stats)/len(stats)
+
                 
         players.append({
             'pid': player.pid,
             'avg_stats': avg_stats,
-            'aim': player.aim,
-            'speed': player.speed,
-            'throw': player.throw,
-            'hands': player.hands,
+            'aim': stats[0],
+            'speed': stats[1],
+            'throw': stats[2],
+            'hands': stats[3],
             'games_played': gp_total
             })
     
@@ -72,12 +95,15 @@ def team_page(team_name):
 
 #def wkschedule():
 def wkschedule(week = None):
+
+
     if week is None:
-        week= '1'
+        week= 1
 
     #selected_week = request.args.get('week', default = 1., type = float)
     week_num = float(week)
-    
+
+
     #if selected_week in [1, 1.5, 2, 2.5]:
     if week_num in [1, 1.5, 2, 2.5]:
         filtered_schedule = [match for match in schedule if match.week==week_num]

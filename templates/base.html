@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}League App{% endblock %}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+
+        .global-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .app-title {
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .app-title:hover {
+            opacity: 0.8;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.2s;
+        }
+
+        .nav-links a:hover {
+            opacity: 0.8;
+        }
+
+        .current-week-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 15px;
+            border-radius: 5px;
+        }
+
+        .current-week-selector label {
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .current-week-selector select {
+            padding: 6px 10px;
+            border: none;
+            border-radius: 4px;
+            background: white;
+            color: #333;
+            font-weight: bold;
+            cursor: pointer;
+            min-width: 80px;
+        }
+
+        .current-week-selector select:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+        }
+
+        .page-content {
+            padding: 20px;
+        }
+
+        .page-content-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <!-- Global Header with Week Selector -->
+    <div class="global-header">
+        <div class="header-content">
+            <div class="app-title" onclick="window.location.href='/'">League Management</div>
+            
+            <nav class="nav-links">
+                <a href="/">Standings</a>
+                <a href="/schedule">Schedule</a>
+            </nav>
+
+            <div class="current-week-selector">
+                <label for="globalWeekSelect">Current Week:</label>
+                <select id="globalWeekSelect" onchange="changeGlobalWeek()">
+                    <option value="1" {% if current_week == 1 %}selected{% endif %}>Week 1</option>
+                    <option value="1.5" {% if current_week == 1.5 %}selected{% endif %}>Week 1.5</option>
+                    <option value="2" {% if current_week == 2 %}selected{% endif %}>Week 2</option>
+                    <option value="2.5" {% if current_week == 2.5 %}selected{% endif %}>Week 2.5</option>
+                    <option value="3" {% if current_week == 3 %}selected{% endif %}>Week 3</option>
+                    <option value="4" {% if current_week == 4 %}selected{% endif %}>Week 4</option>
+                    <option value="5" {% if current_week == 5 %}selected{% endif %}>Week 5</option>
+                    <option value="6" {% if current_week == 6 %}selected{% endif %}>Week 6</option>
+                    <option value="7" {% if current_week == 7 %}selected{% endif %}>Week 7</option>
+                    <option value="8" {% if current_week == 8 %}selected{% endif %}>Week 8</option>
+                    <option value="9" {% if current_week == 9 %}selected{% endif %}>Week 9</option>
+                    <option value="10" {% if current_week == 10 %}selected{% endif %}>Week 10</option>
+                    <option value="11" {% if current_week == 11 %}selected{% endif %}>Week 11</option>
+                    <option value="12" {% if current_week == 12 %}selected{% endif %}>Week 12</option>
+                    <option value="13" {% if current_week == 13 %}selected{% endif %}>Week 13</option>
+                    <option value="14" {% if current_week == 14 %}selected{% endif %}>Week 14</option>
+                    <option value="15" {% if current_week == 15 %}selected{% endif %}>Week 15</option>
+                    <option value="16" {% if current_week == 16 %}selected{% endif %}>Week 16</option>
+                    <!-- Add more weeks as needed -->
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="page-content">
+        <div class="page-content-inner">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <script>
+        function changeGlobalWeek() {
+            const week = document.getElementById('globalWeekSelect').value;
+            // Reload the current page with the new week parameter
+            const url = new URL(window.location);
+            url.searchParams.set('set_week', week);
+            window.location.href = url.toString();
+        }
+    </script>
+</body>
+</html>

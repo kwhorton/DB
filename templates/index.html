@@ -1,5 +1,14 @@
 <!DOCTYPE html>
+
 <html lang="en">
+
+{% extends "base.html" %}
+
+{% block title %}Standings{% endblock %}
+
+{% block content %}
+
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -146,43 +155,44 @@
     </div>
 </body>
 <body>
-    <div class="standings-container">
-        <h1>Standings</h1>
-        
-        <div class="divisions-grid">
-            {% for division, teams in standings_data.items() %}
-            <div class="division-card">
-                <div class="division-header">{{ division }}</div>
-                <table class="standings-table">
-                    <thead>
-                        <tr>
-                            <th class="col-rank">#</th>
-                            <th class="col-team">Team</th>
-                            <th class="col-rating">Rating</th>
-                            <th class="col-score">Score</th>
-                            <th class="col-fp">FP</th>
-                            <th class="col-h2h">H2H</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for team in teams %}
-                        <tr>
-                            <td class="rank">{{ loop.index }}</td>
-                            <td class="team-name">
-                                <a href="/team/{{ team.team_name }}">{{ team.team_name }}</a>
-                            </td>
-                            <td class="stat">{{ "%.2f"|format(team.rating) }}</td>
-                            <td class="stat">{{ team.score }}</td>
-                            <td class="stat">{{ team.fp }}</td>
-                            <td class="stat">{{ team.h2h }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% endfor %}
-        </div>
+
+
+<h1>Standings</h1>
+
+<div class="divisions-grid">
+    {% for division, teams in standings_data.items() %}
+    <div class="division-card">
+        <div class="division-header">{{ division }}</div>
+        <table class="standings-table">
+            <thead>
+                <tr>
+                    <th class="col-rank">#</th>
+                    <th class="col-team">Team</th>
+                    <th class="col-rating">Rating</th>
+                    <th class="col-score">Score</th>
+                    <th class="col-fp">FP</th>
+                    <th class="col-h2h">H2H</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for team in teams %}
+                <tr onclick="window.location.href='/team/{{ team.team_name }}'">
+                    <td class="rank">{{ loop.index }}</td>
+                    <td class="team-name">
+                        <a href="/team/{{ team.team_name }}">{{ team.team_name }}</a>
+                    </td>
+                    <td class="stat">{{ "%.2f"|format(team.rating) }}</td>
+                    <td class="stat">{{ team.score }}</td>
+                    <td class="stat">{{ team.fp }}</td>
+                    <td class="stat">{{ team.h2h }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
-</body>
+    {% endfor %}
+    </div>
+    {% endblock %}
+ <!--   </div> -->
 </html>
 

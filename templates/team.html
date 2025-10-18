@@ -152,6 +152,11 @@
 </head>
 <body>
     <div class="team-container">
+        {% extends "base.html" %}
+
+        {% block title %}{{ team.team_name }}{% endblock %}
+
+        {% block content %}
         <div class="back-button">
             <a href="/">← Back to Home</a>
         </div>
@@ -260,5 +265,6 @@
             </div>
         </div>
     </div>
+    {% endblock %}
 </body>
 </html>
