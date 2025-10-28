@@ -107,7 +107,48 @@ def wkschedule(week = None):
     #if selected_week in [1, 1.5, 2, 2.5]:
     if week_num in [1, 1.5, 2, 2.5]:
         filtered_schedule = [match for match in schedule if match.week==week_num]
-        #return render_template("wkschedule.html", events = filtered_schedule, selected_week = selected_week)
+
+        for event in filtered_schedule:
+            event.team1_ratings = get_week_rating(event.team1,week_num)
+            event.team2_ratings = get_week_rating(event.team2,week_num)
+
+            event.team1_rating = 0.25*(event.team1_ratings['Aim']+event.team1_ratings['Speed']+event.team1_ratings['Throw']+event.team1_ratings['Hands'])
+            event.team2_rating = 0.25*(event.team2_ratings['Aim']+event.team2_ratings['Speed']+event.team2_ratings['Throw']+event.team2_ratings['Hands'])
+            
+            end = (week_num>=3)*(week_num+1) + (week_num<3)*(2*week_num-2) 
+            end = int(end)
+
+            event.team1_score = sum(event.team1.score[0:end])
+            event.team2_score = sum(event.team2.score[0:end])
+
+            event.team1_division = event.team1.division
+            event.team2_division = event.team2.division
+
+            division_teams_1 = [t for t in teams if t.division == event.team1.division]
+            division_teams_2 = [t for t in teams if t.division == event.team2.division]
+            
+            # Sort by score, FP, H2H
+            division_teams_1.sort(key=lambda t: (
+                -sum(t.score[0:end]),
+                -t.score[0:end].count(21),
+                -t.score[0:min(4, end)].count(15)
+            ))
+            division_teams_2.sort(key=lambda t: (
+                -sum(t.score[0:end]),
+                -t.score[0:end].count(21),
+                -t.score[0:min(4, end)].count(15)
+            ))
+            
+            event.team1_place = [team.team_name for team in division_teams_1].index(event.team1.team_name) + 1
+            event.team2_place = [team.team_name for team in division_teams_2].index(event.team2.team_name) + 1
+  
+
+            
+            
+
+
+
+        
         return render_template('wkschedule.html', week = week_num, is_tournament = False, events = filtered_schedule)
 
 
@@ -152,6 +193,78 @@ def view_tournament(tournament_id):
             tournament_data['matches'].append(None)
     
     return render_template('tournament.html', tournament_data=tournament_data)
+
+
+@app.route('/player/<pid>')
+def player_page(pid):
+    current_week = session.get('current_week', 16)
+    
+    # Find the player
+    player = None
+    player_team = None
+    
+    for team in teams:
+        for p in team.players:
+            if p.pid == pid:
+                player = p
+                player_team = team
+                break
+        if player:
+            break
+    
+    if not player:
+        return "Player not found", 404
+    
+    # Get current stats (up to current_week)
+    current_stats = {
+        'aim': 0,
+        'speed': 0,
+        'throw': 0,
+        'hands': 0
+    }
+    
+    # Get the most recent stats up to current_week
+
+    
+    
+    # Get all stats up to current_week
+    stats_history = []
+    for stat in player.all_stats:
+        if stat['Week'] <= current_week:
+            current_stats['aim'] = stat['Aim']
+            current_stats['speed'] = stat['Speed']
+            current_stats['throw'] = stat['Throw']
+            current_stats['hands'] = stat['Hands']
+            stats_history.append({
+                'week': stat['Week'],
+                'gp': stat['GP'],
+                'throws': stat['Throws'],
+                'hits': stat['Hits'],
+                'blocked': stat['Blocked'],
+                'caught': stat['Caught'],
+                'targeted': stat['Targeted'],
+                'hit': stat['Hit'],
+                'blocks': stat['Blocks'],
+                'catches': stat['Catches']
+#                'aim': stat['Aim'],
+ #               'speed': stat['Speed'],
+  #              'throw': stat['Throw'],
+   #             'hands': stat['Hands'],
+                
+    #            'avg': (stat['Aim'] + stat['Speed'] + stat['Throw'] + stat['Hands']) / 4
+            })
+
+     # Calculate average
+    avg_stat = sum(current_stats.values()) / 4
+
+   
+    return render_template('player.html',
+                         player=player,
+                         team=player_team,
+                         current_stats=current_stats,
+                         avg_stat=avg_stat,
+                         stats_history=stats_history)
+
 
 
 

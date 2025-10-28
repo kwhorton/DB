@@ -45,4 +45,23 @@ def results(team_name,teams,schedule,all_tourneys,week):
             
 
 
+def get_week_rating(team,week):
+    team_stats ={'Aim':0,
+                 'Speed':0,
+                 'Throw':0,
+                 'Hands':0}
+    
+    for player in team.players:
+        player_week = [stats for stats in player.all_stats if stats['Week']==week]
+        player_week = player_week[0]
+        team_stats['Aim']+=player_week['Aim']
+        team_stats['Speed']+=player_week['Speed']
+        team_stats['Throw']+=player_week['Throw']
+        team_stats['Hands']+=player_week['Hands']
 
+    team_stats['Aim']=team_stats['Aim']/len(team.players)
+    team_stats['Speed']=team_stats['Speed']/len(team.players)
+    team_stats['Throw']=team_stats['Throw']/len(team.players)
+    team_stats['Hands']=team_stats['Hands']/len(team.players)
+
+    return team_stats

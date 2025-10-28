@@ -11,7 +11,7 @@ for d in range(4):
         team_mean = random.randint(300,400)
         players = []
         for i in range(1,9):
-            player_id = f"P{8*(j-1)+i:03}"
+            player_id = f"P{8*(8*d+j-1)+i:03}"
             player_aim = random.randint(team_mean-20,team_mean+20)
             player_speed = random.randint(team_mean-20,team_mean+20)
             player_throw = random.randint(team_mean-20,team_mean+20)
