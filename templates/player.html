@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block title %}{{ player.pid }}{% endblock %}
+
+{% block content %}
+<style>
+    .back-button {
+        margin-bottom: 20px;
+    }
+
+    .back-button a {
+        display: inline-block;
+        padding: 10px 20px;
+        background: #667eea;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        font-weight: bold;
+        transition: background 0.2s;
+    }
+
+    .back-button a:hover {
+        background: #5568d3;
+    }
+
+    .player-header {
+        background: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-bottom: 30px;
+        text-align: center;
+    }
+
+    .player-header h1 {
+        margin: 0 0 10px 0;
+        color: #333;
+        font-size: 32px;
+    }
+
+    .player-header .player-id {
+        color: #999;
+        font-size: 18px;
+        margin-bottom: 15px;
+    }
+
+    .player-team {
+        display: inline-block;
+        padding: 8px 15px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 5px;
+        font-weight: bold;
+        text-decoration: none;
+        transition: transform 0.2s;
+    }
+
+    .player-team:hover {
+        transform: scale(1.05);
+    }
+
+    .stats-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 30px;
+        margin-bottom: 30px;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 25px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        text-align: center;
+        transition: transform 0.2s;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .stat-label {
+        font-size: 14px;
+        color: #999;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+        font-weight: bold;
+    }
+
+    .stat-value {
+        font-size: 36px;
+        font-weight: bold;
+        color: #667eea;
+    }
+
+    .stat-card.avg {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .stat-card.avg .stat-label {
+        color: white;
+    }
+
+    .stat-card.avg .stat-value {
+        color: white;
+    }
+
+    .history-section {
+        background: white;
+        padding: 25px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .section-title {
+        font-size: 22px;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 3px solid #667eea;
+    }
+
+    .stats-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .stats-table th {
+        background: #f8f9fa;
+        padding: 12px;
+        text-align: center;
+        font-weight: bold;
+        color: #555;
+        border-bottom: 2px solid #ddd;
+        font-size: 14px;
+    }
+
+    .stats-table td {
+        padding: 12px;
+        border-bottom: 1px solid #eee;
+        text-align: center;
+    }
+
+    .stats-table tr:hover {
+        background: #f8f9fa;
+    }
+
+    .stats-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .week-col {
+        font-weight: bold;
+        color: #667eea;
+    }
+
+    .no-data {
+        text-align: center;
+        color: #999;
+        padding: 40px;
+        font-style: italic;
+    }
+
+    /* Highlight different stat levels */
+    .stat-high {
+        color: #2e7d32;
+        font-weight: bold;
+    }
+
+    .stat-medium {
+        color: #f57c00;
+    }
+
+    .stat-low {
+        color: #c62828;
+    }
+</style>
+
+<div class="back-button">
+    <a href="/team/{{ team.team_name }}">← Back to {{ team.team_name }}</a>
+</div>
+
+<div class="player-header">
+    <h1>{{ player.pid }}</h1>
+    <div class="player-id">Player ID: {{ player.pid }}</div>
+    <a href="/team/{{ team.team_name }}" class="player-team">{{ team.team_name }}</a>
+</div>
+
+<div class="stats-container">
+    <div class="stat-card">
+        <div class="stat-label">Aim</div>
+        <div class="stat-value">{{ current_stats.aim }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Speed</div>
+        <div class="stat-value">{{ current_stats.speed }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Throw</div>
+        <div class="stat-value">{{ current_stats.throw }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Hands</div>
+        <div class="stat-value">{{ current_stats.hands }}</div>
+    </div>
+    <div class="stat-card avg">
+        <div class="stat-label">Average</div>
+        <div class="stat-value">{{ "%.2f"|format(avg_stat) }}</div>
+    </div>
+</div>
+
+<div class="history-section">
+    <div class="section-title">Stats History (Through Week {{ current_week }})</div>
+    {% if stats_history %}
+    <table class="stats-table">
+        <thead>
+            <tr>
+                <th>Week</th>
+                <th>Games Played</th>
+                <th>Throws</th>
+                <th>Hits</th>
+                <th>Blocked</th>
+                <th>Caught</th>
+                <th>Targeted</th>
+                <th>Hit</th>
+                <th>Blocks</th>
+                <th>Catches</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for stat in stats_history %}
+            <tr>
+                <td class="week-col">{{ stat.week }}</td>
+                <td>{{ stat.gp }}</td>
+                <td>{{ stat.throws }}</td>
+                <td>{{ stat.hits }}</td>
+                <td>{{ stat.blocked }}</td>
+                <td>{{ stat.caught }}</td>
+                <td>{{ stat.targeted }}</td>
+                <td>{{ stat.hit }}</td>
+                <td>{{ stat.blocks }}</td>
+                <td>{{ stat.catches }}</td>
+                               
+                
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="no-data">No stats available for this time period</div>
+    {% endif %}
+</div>
+
+{% endblock %}

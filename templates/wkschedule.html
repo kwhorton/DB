@@ -212,9 +212,23 @@
             background: #f8f9fa;
         }
 
+        .team-name-row {
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .team-info-row {
+            font-size: 12px;
+            color: #666;
+            font-weight: normal;
+            line-height: 1.4;
+        }
+
         .team-col {
             font-weight: 500;
             color: #333;
+            padding: 15px !important;
         }
 
         .score-col {
@@ -385,7 +399,14 @@
                     </thead>
                     <tbody>
                         <tr>
-                            <td class="team-col">Away: {{ event.team1.team_name }}</td>
+                            <td class="team-col">
+                                <div class = "team-name-row">{{ event.team1.team_name }}</div>
+                                <div class = "team-info-row">
+                                    Rating: {{ "%.2f"|format(event.team1_rating) }} |
+                                    Score: {{ event.team1_score }} |
+                                    {{ event.team1_division }}: #{{ event.team1_place }}
+                                </div>
+                            </td>
                             <td class="score-column final-score set-score-final" style="display: none;">{{ event.match_score[0] }}</td>
                             {% for set in event.set_results %}
                             <td class="score-column final-score set-cell-{{ loop.index0 }}" style="display: none;">{{ set[0] }}</td>
@@ -396,7 +417,14 @@
                             {% endfor %}
                         </tr>
                         <tr>
-                            <td class="team-col">Home: {{ event.team2.team_name }}</td>
+                            <td class="team-col">
+                                <div class = "team-name-row">{{ event.team2.team_name }}</div>
+                                <div class = "team-info-row">
+                                    Rating: {{ "%.2f"|format(event.team2_rating) }} |
+                                    Score: {{ event.team2_score }} |
+                                    {{ event.team2_division }}: #{{ event.team2_place }}
+                                </div>
+                            </td>
                             <td class="score-column final-score set-score-final" style="display: none;">{{ event.match_score[1] }}</td>
                             {% for set in event.set_results %}
                             <td class="score-column final-score set-cell-{{ loop.index0 }}" style="display: none;">{{ set[1] }}</td>
