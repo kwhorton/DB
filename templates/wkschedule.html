@@ -212,6 +212,23 @@
             background: #f8f9fa;
         }
 
+        .future-match-notice {
+            text-align: center;
+            color: #f39c12;
+            font-weight: bold;
+            padding: 10px;
+            background: rgba(243, 156, 18, 0.1);
+            border-radius: 5px;
+        }
+
+        .future-score-tourney-notice {
+            text-align: center;
+            color: #f39c12;
+            font-weight: bold;
+            padding: 10px;
+            background: rgba(243, 156, 18, 0.1);
+            border-radius: 5px;
+        }
         .team-name-row {
             font-weight: 500;
             color: #333;
@@ -349,17 +366,31 @@
                 {% for tournament in tournaments %}
                 <div class="tournament-card">
                     <div class="tournament-title">Tournament {{ loop.index }}</div>
+                    {% if tourney_show %}
                     <ul class="teams-list">
+                        
                         {% for team in tournament.teams %}
                         <li>
                             <span class="seed-badge">{{ loop.index }}</span>
                             <span>{{ team }}</span>
                         </li>
                         {% endfor %}
-                    </ul>
+                     </ul>
+                    {% else %}
+                    <div class="future-score-tourney-notice">
+                        Score Tournament--Teams TBD
+                    </div>
+                    {% endif %}
+                   
+                    {% if show_results %}
                     <button class="view-bracket-btn" onclick="window.location.href='{{ url_for('view_tournament', tournament_id=tournament.id) }}'">
                         View Bracket
                     </button>
+                    {% else %}
+                    <button class="view-bracket-btn" disabled style="opacity: 0.5; cursor: not-allowed;">
+                        Tournament Not Yet Played
+                    </button>
+                    {% endif %}
                 </div>
                 {% endfor %}
             </div>
@@ -372,6 +403,7 @@
                     <thead>
                         <tr>
                             <th colspan="100%">
+                                {% if show_results %}
                                 <div class="buttons-group">
                                     <button class="toggle-scores" onclick="toggleScores(this)">
                                         Show Scores
@@ -383,10 +415,16 @@
                                         Reset
                                     </button>
                                 </div>
+                                {% else %}
+                                <div class="future-match-notice">
+                                    Match scheduled
+                                </div>
+                                {% endif %}
                             </th>
                         </tr>
                         <tr>
                             <th>Team</th>
+                            {% if show_results %}
                             <th class="score-column final-score" style="display: none;">Sets</th>
                             {% for set in event.set_results %}
                             <th class="score-column final-score set-header-{{ loop.index0 }}" style="display: none;">D{{ loop.index }}</th>
@@ -395,6 +433,7 @@
                             {% for set in event.set_results %}
                             <th class="score-column progressive set-header-prog-{{ loop.index0 }}" style="display: none;">D{{ loop.index }}</th>
                             {% endfor %}
+                            {% endif %}
                         </tr>
                     </thead>
                     <tbody>
@@ -407,6 +446,7 @@
                                     {{ event.team1_division }}: #{{ event.team1_place }}
                                 </div>
                             </td>
+                            {% if show_results %}
                             <td class="score-column final-score set-score-final" style="display: none;">{{ event.match_score[0] }}</td>
                             {% for set in event.set_results %}
                             <td class="score-column final-score set-cell-{{ loop.index0 }}" style="display: none;">{{ set[0] }}</td>
@@ -415,6 +455,7 @@
                             {% for set in event.set_results %}
                             <td class="score-column progressive game-score set-cell-prog-{{ loop.index0 }}" data-set="{{ loop.index0 }}" style="display: none;">0</td>
                             {% endfor %}
+                            {% endif %}
                         </tr>
                         <tr>
                             <td class="team-col">
@@ -425,6 +466,7 @@
                                     {{ event.team2_division }}: #{{ event.team2_place }}
                                 </div>
                             </td>
+                            {% if show_results %}
                             <td class="score-column final-score set-score-final" style="display: none;">{{ event.match_score[1] }}</td>
                             {% for set in event.set_results %}
                             <td class="score-column final-score set-cell-{{ loop.index0 }}" style="display: none;">{{ set[1] }}</td>
@@ -433,6 +475,7 @@
                             {% for set in event.set_results %}
                             <td class="score-column progressive game-score set-cell-prog-{{ loop.index0 }}" data-set="{{ loop.index0 }}" style="display: none;">0</td>
                             {% endfor %}
+                            {% endif %} 
                         </tr>
                     </tbody>
                 </table>
