@@ -23,9 +23,9 @@ app.config["TEMPLATES_AUTO_RELOAD"] = True
 
 @app.before_request
 def set_current_week():
-    # Get current week from session or default to 16
+    # Get current week from session or default to 1
     if 'current_week' not in session:
-        session['current_week'] = 16
+        session['current_week'] = 1
     
     # Check if week is being changed
     if request.args.get('set_week'):
@@ -36,18 +36,18 @@ def set_current_week():
 
 @app.context_processor
 def inject_current_week():
-    return {'current_week': session.get('current_week', 16)}
+    return {'current_week': session.get('current_week', 1)}
 
 @app.route("/")
 
 def index():
-    current_week = session.get('current_week', 16)
+    current_week = session.get('current_week', 1)
     standings_data = get_standings_by_division(teams, schedule, all_tourneys, current_week)
     return render_template("index.html", standings_data=standings_data)
 
 @app.route('/team/<team_name>')
 def team_page(team_name):
-    current_week = session.get('current_week', 16)
+    current_week = session.get('current_week', 1)
 
 
     # Get the team object
@@ -96,13 +96,19 @@ def team_page(team_name):
 #def wkschedule():
 def wkschedule(week = None):
 
-
+    current_week = session.get('current_week', 16)  # "Today's date"
     if week is None:
         week= 1
 
     #selected_week = request.args.get('week', default = 1., type = float)
     week_num = float(week)
 
+    # Determine if results should be shown
+    show_results = week_num <= current_week
+    if show_results:
+        tourney_show = True
+    else:
+        tourney_show = week_num not in [7,11,14]
 
     #if selected_week in [1, 1.5, 2, 2.5]:
     if week_num in [1, 1.5, 2, 2.5]:
@@ -143,13 +149,7 @@ def wkschedule(week = None):
             event.team2_place = [team.team_name for team in division_teams_2].index(event.team2.team_name) + 1
   
 
-            
-            
-
-
-
-        
-        return render_template('wkschedule.html', week = week_num, is_tournament = False, events = filtered_schedule)
+        return render_template('wkschedule.html', week = week_num, is_tournament = False, events = filtered_schedule, show_results = show_results, tourney_show = None)
 
 
     else:
@@ -161,7 +161,9 @@ def wkschedule(week = None):
                     'teams': [team.team_name for team in tourney.team_list]
                 }
                 tournaments.append(tourney_info)
-        return render_template('wkschedule.html', week= week_num, is_tournament = True, tournaments = tournaments)
+        #tourney_show = (tourney.type != 'Score')
+                
+        return render_template('wkschedule.html', week= week_num, is_tournament = True, tournaments = tournaments, show_results = show_results, tourney_show = tourney_show)
 
 
 @app.route('/tournament/<int:tournament_id>')

@@ -30,6 +30,7 @@ for w in range(14):
 
     for i in range(4):
         tourney = Tournament(teams_lists[i],2033,w+3)
+        tourney.type = tourney_types[w]
         tourney.run_tourney()
         all_tourneys.append(tourney)
         schedule.extend(tourney.matches)
