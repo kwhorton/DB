@@ -122,26 +122,46 @@
         }
 
         .teams-list li {
-            padding: 8px 10px;
+            padding: 12px 10px;
             border-bottom: 1px solid #eee;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             font-size: 14px;
+            gap: 10px;
         }
 
         .teams-list li:last-child {
             border-bottom: none;
         }
 
+        .team-seed-section {
+            flex-shrink: 0;
+        }
+
+        .team-details-section {
+            flex-grow: 1;
+        }
+
+        .team-name-tourney {
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .team-info-tourney {
+            font-size: 11px;
+            color: #666;
+            line-height: 1.4;
+        }
+
         .seed-badge {
             display: inline-block;
             background: #667eea;
             color: white;
-            padding: 3px 8px;
+            padding: 4px 8px;
             border-radius: 3px;
             font-size: 11px;
             font-weight: bold;
-            margin-right: 10px;
             min-width: 25px;
             text-align: center;
         }
@@ -368,11 +388,19 @@
                     <div class="tournament-title">Tournament {{ loop.index }}</div>
                     {% if tourney_show %}
                     <ul class="teams-list">
-                        
-                        {% for team in tournament.teams %}
+                        {% for team_info in tournament.teams_info %}
                         <li>
-                            <span class="seed-badge">{{ loop.index }}</span>
-                            <span>{{ team }}</span>
+                            <div class="team-seed-section">
+                                <span class="seed-badge">{{ loop.index }}</span>
+                            </div>
+                            <div class="team-details-section">
+                                <div class="team-name-tourney">{{ team_info.team }}</div>
+                                <div class="team-info-tourney">
+                                    Score: {{team_info.score }} |
+                                    {{ team_info.division }}: #{{ team_info.place }} |
+                                    Rating: {{ "%.2f"|format(team_info.rating) }}
+                                </div>
+                            </div>
                         </li>
                         {% endfor %}
                      </ul>
