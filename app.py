@@ -110,19 +110,22 @@ def wkschedule(week = None):
     else:
         tourney_show = week_num not in [7,11,14]
 
+    display_week = min(week_num,current_week)
+    end = (display_week>=3)*(display_week+1) + (display_week<3)*(2*display_week-2) 
+    end = int(end)
+
     #if selected_week in [1, 1.5, 2, 2.5]:
     if week_num in [1, 1.5, 2, 2.5]:
         filtered_schedule = [match for match in schedule if match.week==week_num]
 
         for event in filtered_schedule:
-            event.team1_ratings = get_week_rating(event.team1,week_num)
-            event.team2_ratings = get_week_rating(event.team2,week_num)
+
+            event.team1_ratings = get_week_rating(event.team1,display_week)
+            event.team2_ratings = get_week_rating(event.team2,display_week)
 
             event.team1_rating = 0.25*(event.team1_ratings['Aim']+event.team1_ratings['Speed']+event.team1_ratings['Throw']+event.team1_ratings['Hands'])
             event.team2_rating = 0.25*(event.team2_ratings['Aim']+event.team2_ratings['Speed']+event.team2_ratings['Throw']+event.team2_ratings['Hands'])
             
-            end = (week_num>=3)*(week_num+1) + (week_num<3)*(2*week_num-2) 
-            end = int(end)
 
             event.team1_score = sum(event.team1.score[0:end])
             event.team2_score = sum(event.team2.score[0:end])
@@ -156,9 +159,37 @@ def wkschedule(week = None):
         tournaments = []
         for tourney in all_tourneys:
             if tourney.week == week_num:
+                teams_info= []
+                for team in tourney.team_list:
+                    
+                    team_division = team.division
+                    division_teams = [t for t in teams if t.division == team_division]
+                    division_teams.sort(key=lambda t: (
+                        -sum(t.score[0:end]),
+                        -t.score[0:end].count(21),
+                        -t.score[0:min(4, end)].count(15)
+                        ))
+                    team_place = [team1.team_name for team1 in division_teams].index(team.team_name) + 1
+                    team_ratings = get_week_rating(team,display_week)
+                    team_rating = 0.25*(team_ratings['Aim']+team_ratings['Speed']+team_ratings['Throw']+team_ratings['Hands'])
+                    team_info = {
+                        'team': team.team_name,
+                        'score': sum(team.score[0:end]),
+                        'division': team.division,
+                        'place': team_place,
+                        'ratings':team_ratings,
+                        'rating': team_rating,
+                        'FP': team.score[0:end].count(21),
+                        'H2H': team.score[0:min(4,end)].count(15)
+                        }
+
+                    teams_info.append(team_info)
+
+                teams_info.sort(key=lambda x: (-x['score'],-x['FP'],-x['H2H']))
+                
                 tourney_info = {
                     'id': tourney.id,  # Use the actual ID
-                    'teams': [team.team_name for team in tourney.team_list]
+                    'teams_info': teams_info
                 }
                 tournaments.append(tourney_info)
         #tourney_show = (tourney.type != 'Score')
