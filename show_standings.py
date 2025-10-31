@@ -53,5 +53,44 @@ def get_standings_by_division(teams, schedule, all_tourneys, week):
         if division not in divisions:
             divisions[division] = []
         divisions[division].append(team_standing)
+
+    divisions = dict(sorted(divisions.items()))
     
     return divisions
+
+def get_player_ranks(teams,week):
+
+    stats_for_week = []
+    for team in teams:
+        for player in team.players:
+            week_stats = [stat for stat in player.all_stats if stat['Week']==week]
+            week_stats = week_stats[0]
+            player_info = {
+                'pid': player.pid,
+                'division': team.division,
+                'aim': week_stats['Aim'],
+                'speed': week_stats['Speed'],
+                'throw': week_stats['Throw'],
+                'hands': week_stats['Hands']
+                }
+            player_info['total'] = 0.25*(player_info['aim']+player_info['speed']+player_info['throw']+player_info['hands'])
+            stats_for_week.append(player_info)
+
+    # Convert to DataFrame for easier ranking
+    df = pd.DataFrame(stats_for_week)
+
+    # Add overall ranks (lower rank = better performance)
+    df['aim_rank'] = df['aim'].rank(ascending=False, method='min')
+    df['speed_rank'] = df['speed'].rank(ascending=False, method='min')
+    df['throw_rank'] = df['throw'].rank(ascending=False, method='min')
+    df['hands_rank'] = df['hands'].rank(ascending=False, method='min')
+    df['total_rank'] = df['total'].rank(ascending=False, method='min')
+
+    # Add division ranks
+    for stat in ['aim', 'speed', 'throw', 'hands', 'total']:
+        df[f'{stat}_div_rank'] = df.groupby('division')[stat].rank(ascending=False, method='min')
+
+    # Convert back to list of dictionaries if needed
+    stats_for_week = df.to_dict('records')
+
+    return stats_for_week

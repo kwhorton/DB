@@ -248,26 +248,16 @@ def player_page(pid):
     if not player:
         return "Player not found", 404
     
-    # Get current stats (up to current_week)
-    current_stats = {
-        'aim': 0,
-        'speed': 0,
-        'throw': 0,
-        'hands': 0
-    }
+
     
     # Get the most recent stats up to current_week
 
-    
+        
     
     # Get all stats up to current_week
     stats_history = []
     for stat in player.all_stats:
         if stat['Week'] <= current_week:
-            current_stats['aim'] = stat['Aim']
-            current_stats['speed'] = stat['Speed']
-            current_stats['throw'] = stat['Throw']
-            current_stats['hands'] = stat['Hands']
             stats_history.append({
                 'week': stat['Week'],
                 'gp': stat['GP'],
@@ -287,15 +277,16 @@ def player_page(pid):
     #            'avg': (stat['Aim'] + stat['Speed'] + stat['Throw'] + stat['Hands']) / 4
             })
 
-     # Calculate average
-    avg_stat = sum(current_stats.values()) / 4
 
-   
+    stats_for_week = get_player_ranks(teams,current_week)
+    current_stats = [stat for stat in stats_for_week if stat['pid'] == pid]
+    
+
+
     return render_template('player.html',
                          player=player,
                          team=player_team,
-                         current_stats=current_stats,
-                         avg_stat=avg_stat,
+                         current_stats=current_stats[0],
                          stats_history=stats_history)
 
 
