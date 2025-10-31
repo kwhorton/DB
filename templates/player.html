@@ -66,6 +66,11 @@
         margin-bottom: 30px;
     }
 
+    .stats-container > *:first-child {
+      grid-column: 1 / -1; /* Make the first element span all columns */
+      text-align: center; /* Center the content within the box (optional) */
+    }
+    
     .stat-card {
         background: white;
         padding: 25px;
@@ -92,6 +97,19 @@
         font-weight: bold;
         color: #667eea;
     }
+
+    .stat-sub-value {
+        font-size: 0.7em; /* Make the sub-value smaller */
+        color: #888;
+        display: flex; /* Use flexbox for horizontal arrangement */
+        justify-content: center; /* Horizontally center the content */
+        flex-direction: column; /* Stack spans vertically */
+        align-items: center; /* Centers each item horizontally within the column */
+    }
+
+.stat-sub-value span {
+  margin: 2px 0; /* Add a little vertical spacing between spans */
+}
 
     .stat-card.avg {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -188,26 +206,31 @@
 </div>
 
 <div class="stats-container">
+    <div class="stat-card avg">
+        <div class="stat-label">Average</div>
+        <div class="stat-value">{{ "%.1f"|format(current_stats['total']) }}</div>
+    </div>
     <div class="stat-card">
         <div class="stat-label">Aim</div>
-        <div class="stat-value">{{ current_stats.aim }}</div>
+        <div class="stat-value">{{ current_stats['aim'] }}</div>
+        <div class="stat-rank">
+            <span> {{ current_stats['aim_rank']|int }}</span>
+            <span>/ {{ current_stats['aim_div_rank']|int }} in {{ current_stats['division'] }}</span>
+        </div>
     </div>
     <div class="stat-card">
         <div class="stat-label">Speed</div>
-        <div class="stat-value">{{ current_stats.speed }}</div>
+        <div class="stat-value">{{ current_stats['speed'] }}</div>
     </div>
     <div class="stat-card">
         <div class="stat-label">Throw</div>
-        <div class="stat-value">{{ current_stats.throw }}</div>
+        <div class="stat-value">{{ current_stats['throw'] }}</div>
     </div>
     <div class="stat-card">
         <div class="stat-label">Hands</div>
-        <div class="stat-value">{{ current_stats.hands }}</div>
+        <div class="stat-value">{{ current_stats['hands'] }}</div>
     </div>
-    <div class="stat-card avg">
-        <div class="stat-label">Average</div>
-        <div class="stat-value">{{ "%.2f"|format(avg_stat) }}</div>
-    </div>
+
 </div>
 
 <div class="history-section">
