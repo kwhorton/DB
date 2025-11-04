@@ -209,26 +209,43 @@
     <div class="stat-card avg">
         <div class="stat-label">Average</div>
         <div class="stat-value">{{ "%.1f"|format(current_stats['total']) }}</div>
+        <div class="stat-rank">
+            <span> {{ current_stats['total_rank']|ordinal }}</span>
+            <span>/ {{ current_stats['total_div_rank']|ordinal }} in {{ current_stats['division'] }}</span>
+        </div>
+  
     </div>
     <div class="stat-card">
         <div class="stat-label">Aim</div>
         <div class="stat-value">{{ current_stats['aim'] }}</div>
         <div class="stat-rank">
-            <span> {{ current_stats['aim_rank']|int }}</span>
-            <span>/ {{ current_stats['aim_div_rank']|int }} in {{ current_stats['division'] }}</span>
+            <span> {{ current_stats['aim_rank']|ordinal }}</span>
+            <span>/ {{ current_stats['aim_div_rank']|ordinal }} in {{ current_stats['division'] }}</span>
         </div>
     </div>
     <div class="stat-card">
         <div class="stat-label">Speed</div>
         <div class="stat-value">{{ current_stats['speed'] }}</div>
+        <div class="stat-rank">
+            <span> {{ current_stats['speed_rank']|ordinal }}</span>
+            <span>/ {{ current_stats['speed_div_rank']|ordinal }} in {{ current_stats['division'] }}</span>
+        </div>
     </div>
     <div class="stat-card">
         <div class="stat-label">Throw</div>
         <div class="stat-value">{{ current_stats['throw'] }}</div>
+        <div class="stat-rank">
+            <span> {{ current_stats['throw_rank']|ordinal }}</span>
+            <span>/ {{ current_stats['throw_div_rank']|ordinal }} in {{ current_stats['division'] }}</span>
+        </div>
     </div>
     <div class="stat-card">
         <div class="stat-label">Hands</div>
         <div class="stat-value">{{ current_stats['hands'] }}</div>
+        <div class="stat-rank">
+            <span> {{ current_stats['hands_rank']|ordinal }}</span>
+            <span>/ {{ current_stats['hands_div_rank']|ordinal }} in {{ current_stats['division'] }}</span>
+        </div>
     </div>
 
 </div>

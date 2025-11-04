@@ -94,3 +94,14 @@ def get_player_ranks(teams,week):
     stats_for_week = df.to_dict('records')
 
     return stats_for_week
+
+def ordinal(n):
+    """
+    Return the ordinal representation of a number (1 -> 1st, 2 -> 2nd, etc.)
+    """
+    n = int(n)
+    if 10 <= n % 100 <= 20:
+        suffix = "th"
+    else:
+        suffix = {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
+    return f"{n}{suffix}"

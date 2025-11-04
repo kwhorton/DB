@@ -21,6 +21,8 @@ app.secret_key = 'your_secret_key'  # Set a proper secret key
 
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 
+app.jinja_env.filters['ordinal'] = ordinal
+
 @app.before_request
 def set_current_week():
     # Get current week from session or default to 1
