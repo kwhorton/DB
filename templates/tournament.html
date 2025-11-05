@@ -11,6 +11,26 @@
             background-color: #f5f5f5;
         }
 
+        .back-button {
+            margin-bottom: 20px;
+        }
+
+        .back-button a {
+            display: inline-block;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .back-button a:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+        }
+            
         .tournament-container {
             background: white;
             padding: 30px;
@@ -25,32 +45,98 @@
             margin-bottom: 10px;
         }
 
+        .global-controls {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .global-controls button {
+            padding: 12px 24px;
+            font-size: 14px;
+            cursor: pointer;
+            border: 2px solid #667eea;
+            border-radius: 5px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .global-controls button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
         .bracket-section {
             margin-bottom: 40px;
+        }
+
+        .bracket-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 5px;
+        }
+
+        .losers-header {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .finals-header {
+            background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
+        }
+
+        .placement-header {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
         }
 
         .bracket-title {
             font-size: 24px;
             font-weight: bold;
-            color: #2c3e50;
-            margin-bottom: 20px;
-            text-align: center;
-            padding: 10px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            border-radius: 5px;
         }
 
-        .losers-title {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        .section-controls {
+            display: flex;
+            gap: 8px;
         }
 
-        .finals-title {
-            background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
+        .section-controls button {
+            padding: 8px 16px;
+            font-size: 12px;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 4px;
+            background-color: rgba(255,255,255,0.2);
+            color: white;
+            font-weight: bold;
+            transition: all 0.2s;
         }
 
-        .placement-title {
-            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+        .section-controls button:hover:not(:disabled) {
+            background-color: rgba(255,255,255,0.3);
+            transform: scale(1.05);
+        }
+
+        .section-controls button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-section-toggle {
+            background: rgba(255,255,255,0.25);
+        }
+
+        .btn-section-next {
+            background: rgba(46, 204, 113, 0.8);
+        }
+
+        .btn-section-reset {
+            background: rgba(231, 76, 60, 0.8);
         }
 
         .bracket {
@@ -86,21 +172,22 @@
             min-width: 200px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             transition: all 0.3s ease;
-            cursor: pointer;
         }
 
         .match:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            border-color: #667eea;
         }
 
         .match-header {
             background: #f8f9fa;
-            padding: 5px 10px;
+            padding: 8px 10px;
             border-bottom: 1px solid #ddd;
             font-size: 11px;
             color: #666;
             font-weight: bold;
+            text-align: center;
         }
 
         .team {
@@ -116,21 +203,35 @@
             border-bottom: none;
         }
 
-        .team:hover {
-            background: #f8f9fa;
-        }
-
         .team-name {
             font-weight: 500;
             color: #333;
             flex-grow: 1;
         }
 
-        .team-score {
+        .team-scores {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .match-score {
             font-weight: bold;
-            color: #666;
-            margin-left: 10px;
+            color: #667eea;
             min-width: 20px;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .game-scores {
+            display: flex;
+            gap: 4px;
+        }
+
+        .game-score {
+            font-size: 14px;
+            color: #999;
+            min-width: 15px;
             text-align: center;
         }
 
@@ -143,7 +244,7 @@
             font-weight: bold;
         }
 
-        .winner .team-score {
+        .winner .match-score {
             color: #2e7d32;
         }
 
@@ -173,13 +274,17 @@
         .best-of {
             font-size: 10px;
             color: #999;
-            margin-left: 5px;
         }
 
         /* Responsive design */
         @media (max-width: 1200px) {
             .bracket {
                 overflow-x: auto;
+            }
+            
+            .bracket-header {
+                flex-direction: column;
+                gap: 10px;
             }
         }
     </style>
@@ -191,13 +296,246 @@
 
     <div class="tournament-container">
         <h2>Week {{ tournament_data.week }} Tournament Bracket</h2>
+        <div class="global-controls">
+            <button onclick="showAllResults()">Show All</button>
+        </div>
         <div id="tournamentBracket"></div>
     </div>
 
     <script>
         const tournamentData = {{ tournament_data | tojson }};
         
-        function createMatchHTML(match, matchId, showGames = false) {
+        // Store match states
+        const matchStates = {};
+
+        // Define sections and their matches
+        const sections = {
+            winners: [0, 1, 2, 3, 7, 8, 13],
+            losers: [4, 5, 9, 10, 12, 14],
+            finals: [15, 16],
+            placement: [6, 11]
+        };
+
+        // Define match dependencies (which matches must be revealed before showing teams)
+        const matchDependencies = {
+            // Winners Bracket Round 2
+            7: [0, 1],    // WB R2-1 needs WB R1-1 and R1-2
+            8: [2, 3],    // WB R2-2 needs WB R1-3 and R1-4
+            
+            // Winners Final
+            13: [7, 8],   // Winners Final needs both R2 matches
+            
+            // Losers Bracket Round 1
+            4: [0, 1],    // LB R1-1 needs WB R1-1 and R1-2 losers
+            5: [2, 3],    // LB R1-2 needs WB R1-3 and R1-4 losers
+            
+            // Losers Bracket Round 2
+            9: [4, 7],    // LB R2-1 needs LB R1-1 and WB R2-1 loser
+            10: [5, 8],   // LB R2-2 needs LB R1-2 and WB R2-2 loser
+            
+            // Losers Bracket Round 3
+            12: [9, 10],  // LB R3 needs both LB R2 matches
+            
+            // Losers Final
+            14: [12, 13], // Losers Final needs LB R3 and Winners Final loser
+            
+            // Grand Finals
+            15: [13, 14], // Grand Final needs Winners Final and Losers Final
+            16: [15],     // Grand Final 2 needs Grand Final 1
+            
+            // Placement matches
+            6: [4, 5],    // 7th/8th needs LB R1 matches
+            11: [9, 10]   // 5th/6th needs LB R2 matches
+        };
+
+        function initializeMatchState(matchIndex) {
+            const match = tournamentData.matches[matchIndex];
+            if (!match || !match.games) return;
+
+            matchStates[matchIndex] = {
+                currentGame: 0,
+                mode: 'hidden', // 'hidden', 'final', 'progressive'
+                team1Score: 0,
+                team2Score: 0
+            };
+        }
+
+        function canShowTeams(matchIndex) {
+            // If no dependencies, can always show (round 1 matches)
+            if (!matchDependencies[matchIndex]) {
+                return true;
+            }
+
+            // Check if all dependent matches have been revealed
+            const dependencies = matchDependencies[matchIndex];
+            return dependencies.every(depIndex => {
+                const depState = matchStates[depIndex];
+                return depState && (depState.mode === 'final' || depState.mode === 'progressive');
+            });
+        }
+
+        function shouldShowGrandFinal2() {
+            // Only show Grand Final 2 box if Grand Final 1 has been revealed
+            const gf1State = matchStates[15];
+            return gf1State && (gf1State.mode === 'final' || gf1State.mode === 'progressive');
+        }
+
+        function canRevealSection(sectionName) {
+            const sectionMatches = sections[sectionName];
+            
+            // Check if at least the first match in the section can show teams
+            const firstMatch = sectionMatches[0];
+            return canShowTeams(firstMatch);
+        }
+
+        function getNextMatchToReveal(sectionName) {
+            const sectionMatches = sections[sectionName];
+            
+            for (const matchIndex of sectionMatches) {
+                const match = tournamentData.matches[matchIndex];
+                if (!match) continue;
+                
+                const state = matchStates[matchIndex];
+                if (!state) {
+                    initializeMatchState(matchIndex);
+                }
+                
+                // Skip if teams can't be shown yet
+                if (!canShowTeams(matchIndex)) continue;
+                
+                // Find first match that hasn't been fully revealed
+                if (state.mode === 'hidden') {
+                    return { matchIndex, needsToggle: true, needsNext: false };
+                } else if (state.mode === 'progressive') {
+                    const match = tournamentData.matches[matchIndex];
+                    const isComplete = state.team1Score === 3 || state.team2Score === 3;
+                    if (!isComplete && state.currentGame < match.games.length) {
+                        return { matchIndex, needsToggle: false, needsNext: true };
+                    }
+                }
+            }
+            
+            return null;
+        }
+
+        function toggleSection(sectionName) {
+            const sectionMatches = sections[sectionName];
+            
+            // Find the next match that hasn't been fully revealed
+            for (const matchIndex of sectionMatches) {
+                const match = tournamentData.matches[matchIndex];
+                if (!match) continue;
+                
+                const state = matchStates[matchIndex];
+                if (!canShowTeams(matchIndex)) continue;
+                
+                // If this match is hidden, reveal it with final scores
+                if (state.mode === 'hidden') {
+                    state.mode = 'final';
+                    renderTournament();
+                    return;
+                }
+            }
+            
+            // If all matches are revealed, do nothing
+            renderTournament();
+        }
+
+        function showAllResults() {
+            // Reveal all matches that can be shown
+            tournamentData.matches.forEach((match, matchIndex) => {
+                if (match && matchStates[matchIndex]) {
+                    const state = matchStates[matchIndex];
+                    if (canShowTeams(matchIndex)) {
+                        state.mode = 'final';
+                    }
+                }
+            });
+            renderTournament();
+        }
+            
+        function nextInSection(sectionName) {
+            const nextMatch = getNextMatchToReveal(sectionName);
+            
+            if (!nextMatch) return;
+            
+            const { matchIndex, needsToggle, needsNext } = nextMatch;
+            const state = matchStates[matchIndex];
+            const match = tournamentData.matches[matchIndex];
+            
+            if (needsToggle) {
+                // Start progressive mode for this match
+                state.mode = 'progressive';
+                state.currentGame = 0;
+                state.team1Score = 0;
+                state.team2Score = 0;
+            }
+            
+            if (needsNext || needsToggle) {
+                // Advance one game
+                if (state.currentGame < match.games.length) {
+                    const gameWinner = match.games[state.currentGame].winner;
+                    
+                    if (gameWinner === 1) {
+                        state.team1Score++;
+                    } else if (gameWinner === 2) {
+                        state.team2Score++;
+                    }
+                    
+                    state.currentGame++;
+                }
+            }
+            
+            renderTournament();
+        }
+
+        function resetSection(sectionName) {
+            const sectionMatches = sections[sectionName];
+            
+            sectionMatches.forEach(matchIndex => {
+                const state = matchStates[matchIndex];
+                if (state) {
+                    state.mode = 'hidden';
+                    state.currentGame = 0;
+                    state.team1Score = 0;
+                    state.team2Score = 0;
+                }
+            });
+            
+            renderTournament();
+        }
+
+        function getSectionButtonStates(sectionName) {
+            const canReveal = canRevealSection(sectionName);
+            const sectionMatches = sections[sectionName];
+            
+            // Check if any match is revealed
+            const anyRevealed = sectionMatches.some(idx => {
+                const state = matchStates[idx];
+                return state && (state.mode === 'final' || state.mode === 'progressive');
+            });
+
+            // Check if there's a next match to show (any hidden match with met dependencies)
+            const hasNextToShow = sectionMatches.some(idx => {
+                const match = tournamentData.matches[idx];
+                if (!match) return false;
+                const state = matchStates[idx];
+                return state && state.mode === 'hidden' && canShowTeams(idx);
+            });
+
+            // Check if there's a next game to reveal in progressive mode
+            const hasNext = getNextMatchToReveal(sectionName) !== null;
+
+            return {
+                canReveal,
+                anyRevealed,
+                hasNextToShow,
+                hasNext,
+                showReset: anyRevealed
+            };
+        }
+
+        function createMatchHTML(match, matchIndex, matchId) {
             if (!match) {
                 return `
                     <div class="match">
@@ -209,103 +547,201 @@
                 `;
             }
 
+            // Initialize state if not exists
+            if (!matchStates[matchIndex]) {
+                initializeMatchState(matchIndex);
+            }
+
+            const state = matchStates[matchIndex];
+            const showTeams = canShowTeams(matchIndex);
+
+            // If teams shouldn't be shown yet, show TBD
+            if (!showTeams) {
+                return `
+                    <div class="match" id="match-${matchIndex}">
+                        <div class="match-header">${matchId} <span class="best-of">(Bo5)</span></div>
+                        <div class="team tbd">
+                            <span class="team-name">TBD</span>
+                        </div>
+                        <div class="team tbd">
+                            <span class="team-name">TBD</span>
+                        </div>
+                    </div>
+                `;
+            }
+
             const team1Won = match.winner === 1;
             const team2Won = match.winner === 2;
 
-            return `
-                <div class="match" onclick="showMatchDetails(${matchId})">
-                    <div class="match-header">${matchId} <span class="best-of">(Best of 5)</span></div>
-                    <div class="team ${team1Won ? 'winner' : ''}">
-                        <span class="team-name">${match.team1_name}</span>
-                        <span class="team-score">${match.team1_score}</span>
+            let team1ScoresHTML = '';
+            let team2ScoresHTML = '';
+
+            if (state.mode === 'final') {
+                // Show final scores with all game dots
+                team1ScoresHTML = `
+                    <div class="team-scores">
+                        <span class="match-score">${match.team1_score}</span>
+                        <div class="game-scores">
+                            ${match.games.map((g) => `<span class="game-score">${g.winner === 1 ? '●' : '○'}</span>`).join('')}
+                        </div>
                     </div>
-                    <div class="team ${team2Won ? 'winner' : ''}">
+                `;
+                team2ScoresHTML = `
+                    <div class="team-scores">
+                        <span class="match-score">${match.team2_score}</span>
+                        <div class="game-scores">
+                            ${match.games.map((g) => `<span class="game-score">${g.winner === 2 ? '●' : '○'}</span>`).join('')}
+                        </div>
+                    </div>
+                `;
+            } else if (state.mode === 'progressive') {
+                // Show progressive scores with running tally
+                const visibleGames = state.currentGame;
+                team1ScoresHTML = `
+                    <div class="team-scores">
+                        <span class="match-score">${state.team1Score}</span>
+                        <div class="game-scores">
+                            ${match.games.slice(0, visibleGames).map((g) => `<span class="game-score">${g.winner === 1 ? '●' : '○'}</span>`).join('')}
+                        </div>
+                    </div>
+                `;
+                team2ScoresHTML = `
+                    <div class="team-scores">
+                        <span class="match-score">${state.team2Score}</span>
+                        <div class="game-scores">
+                            ${match.games.slice(0, visibleGames).map((g) => `<span class="game-score">${g.winner === 2 ? '●' : '○'}</span>`).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="match" id="match-${matchIndex}">
+                    <div class="match-header">${matchId} <span class="best-of">(Bo5)</span></div>
+                    <div class="team ${team1Won && state.mode === 'final' ? 'winner' : ''}">
+                        <span class="team-name">${match.team1_name}</span>
+                        ${team1ScoresHTML}
+                    </div>
+                    <div class="team ${team2Won && state.mode === 'final' ? 'winner' : ''}">
                         <span class="team-name">${match.team2_name}</span>
-                        <span class="team-score">${match.team2_score}</span>
+                        ${team2ScoresHTML}
                     </div>
                 </div>
             `;
-        }
-
-        function showMatchDetails(matchIndex) {
-            const match = tournamentData.matches[matchIndex];
-            if (!match || !match.games) return;
-            
-            alert(`Match ${matchIndex + 1} Details:\n${match.team1_name} vs ${match.team2_name}\nGames: ${match.games.length}`);
         }
 
         function renderTournament() {
             const container = document.getElementById('tournamentBracket');
             const m = tournamentData.matches;
 
+            const winnersButtons = getSectionButtonStates('winners');
+            const losersButtons = getSectionButtonStates('losers');
+            const finalsButtons = getSectionButtonStates('finals');
+            const placementButtons = getSectionButtonStates('placement');
+
             container.innerHTML = `
                 <!-- Winners Bracket -->
                 <div class="bracket-section">
-                    <div class="bracket-title">Winners Bracket</div>
+                    <div class="bracket-header">
+                        <div class="bracket-title">Winners Bracket</div>
+                        <div class="section-controls">
+                            ${winnersButtons.showReset ? '<button class="btn-section-reset" onclick="resetSection(\'winners\')">Reset</button>' : ''}
+                            <button class="btn-section-toggle" onclick="toggleSection('winners')" ${!winnersButtons.hasNextToShow ? 'disabled' : ''}>Show Next</button>
+                            <button class="btn-section-next" onclick="nextInSection('winners')" ${!winnersButtons.hasNext ? 'disabled' : ''}>Next</button>
+                        </div>
+                    </div>
                     <div class="bracket">
                         <div class="round">
                             <div class="round-title">Round 1</div>
-                            ${createMatchHTML(m[0], 'WB R1-1')}
-                            ${createMatchHTML(m[1], 'WB R1-2')}
-                            ${createMatchHTML(m[2], 'WB R1-3')}
-                            ${createMatchHTML(m[3], 'WB R1-4')}
+                            ${createMatchHTML(m[0], 0, 'WB R1-1')}
+                            ${createMatchHTML(m[1], 1, 'WB R1-2')}
+                            ${createMatchHTML(m[2], 2, 'WB R1-3')}
+                            ${createMatchHTML(m[3], 3, 'WB R1-4')}
                         </div>
                         <div class="round">
                             <div class="round-title">Round 2</div>
-                            ${createMatchHTML(m[7], 'WB R2-1')}
-                            ${createMatchHTML(m[8], 'WB R2-2')}
+                            ${createMatchHTML(m[7], 7, 'WB R2-1')}
+                            ${createMatchHTML(m[8], 8, 'WB R2-2')}
                         </div>
                         <div class="round">
                             <div class="round-title">Winners Final</div>
-                            ${createMatchHTML(m[13], 'Winners Final')}
+                            ${createMatchHTML(m[13], 13, 'Winners Final')}
                         </div>
                     </div>
                 </div>
 
                 <!-- Losers Bracket -->
                 <div class="bracket-section">
-                    <div class="bracket-title losers-title">Losers Bracket</div>
+                    <div class="bracket-header losers-header">
+                        <div class="bracket-title">Losers Bracket</div>
+                        <div class="section-controls">
+                            ${losersButtons.showReset ? '<button class="btn-section-reset" onclick="resetSection(\'losers\')">Reset</button>' : ''}
+                            <button class="btn-section-toggle" onclick="toggleSection('losers')" ${!losersButtons.hasNextToShow ? 'disabled' : ''}>Show Next</button>
+                            <button class="btn-section-next" onclick="nextInSection('losers')" ${!losersButtons.hasNext ? 'disabled' : ''}>Next</button>
+                        </div>
+                    </div>
                     <div class="bracket">
                         <div class="round">
                             <div class="round-title">Round 1</div>
-                            ${createMatchHTML(m[4], 'LB R1-1')}
-                            ${createMatchHTML(m[5], 'LB R1-2')}
+                            ${createMatchHTML(m[4], 4, 'LB R1-1')}
+                            ${createMatchHTML(m[5], 5, 'LB R1-2')}
                         </div>
                         <div class="round">
                             <div class="round-title">Round 2</div>
-                            ${createMatchHTML(m[9], 'LB R2-1')}
-                            ${createMatchHTML(m[10], 'LB R2-2')}
+                            ${createMatchHTML(m[9], 9, 'LB R2-1')}
+                            ${createMatchHTML(m[10], 10, 'LB R2-2')}
                         </div>
                         <div class="round">
                             <div class="round-title">Round 3</div>
-                            ${createMatchHTML(m[12], 'LB R3')}
+                            ${createMatchHTML(m[12], 12, 'LB R3')}
                         </div>
                         <div class="round">
                             <div class="round-title">Losers Final</div>
-                            ${createMatchHTML(m[14], 'Losers Final')}
+                            ${createMatchHTML(m[14], 14, 'Losers Final')}
                         </div>
                     </div>
                 </div>
 
                 <!-- Grand Finals -->
                 <div class="bracket-section">
-                    <div class="bracket-title finals-title">Grand Finals</div>
+                    <div class="bracket-header finals-header">
+                        <div class="bracket-title">Grand Finals</div>
+                        <div class="section-controls">
+                            ${finalsButtons.showReset ? '<button class="btn-section-reset" onclick="resetSection(\'finals\')">Reset</button>' : ''}
+                            <button class="btn-section-toggle" onclick="toggleSection('finals')" ${!finalsButtons.hasNextToShow ? 'disabled' : ''}>Show Next</button>
+                            <button class="btn-section-next" onclick="nextInSection('finals')" ${!finalsButtons.hasNext ? 'disabled' : ''}>Next</button>
+                        </div>
+                    </div>
                     <div class="grand-finals">
-                        ${createMatchHTML(m[15], 'Grand Final')}
-                        ${m[16] ? createMatchHTML(m[16], 'Grand Final 2') : ''}
+                        ${createMatchHTML(m[15], 15, 'Grand Final')}
+                        ${shouldShowGrandFinal2() && m[16] ? createMatchHTML(m[16], 16, 'Grand Final 2') : ''}
                     </div>
                 </div>
 
                 <!-- Placement Matches -->
                 <div class="bracket-section">
-                    <div class="bracket-title placement-title">Placement Matches</div>
+                    <div class="bracket-header placement-header">
+                        <div class="bracket-title">Placement Matches</div>
+                        <div class="section-controls">
+                            ${placementButtons.showReset ? '<button class="btn-section-reset" onclick="resetSection(\'placement\')">Reset</button>' : ''}
+                            <button class="btn-section-toggle" onclick="toggleSection('placement')" ${!placementButtons.hasNextToShow ? 'disabled' : ''}>Show Next</button>
+                            <button class="btn-section-next" onclick="nextInSection('placement')" ${!placementButtons.hasNext ? 'disabled' : ''}>Next</button>
+                        </div>
+                    </div>
                     <div class="placement-matches">
-                        ${createMatchHTML(m[11], '5th/6th Place')}
-                        ${createMatchHTML(m[6], '7th/8th Place')}
+                        ${createMatchHTML(m[11], 11, '5th/6th Place')}
+                        ${createMatchHTML(m[6], 6, '7th/8th Place')}
                     </div>
                 </div>
             `;
         }
+
+        // Initialize all match states
+        tournamentData.matches.forEach((match, index) => {
+            if (match) {
+                initializeMatchState(index);
+            }
+        });
 
         // Initialize
         renderTournament();
