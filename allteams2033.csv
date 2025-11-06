@@ -1,0 +1,129 @@
+Team,Level,Division,Notoriety,Score
+Raleigh,Tier 1,East,4,390.2
+Los Angeles,Tier 1,West,5,389.709375
+Rochester,Tier 1,East,2.5,388.078125
+Oklahoma City,Tier 1,South,3.5,362.9875
+Washington,Tier 1,East,5,388.228125
+Minnesota,Tier 1,Midwest,5,386.896875
+Seattle,Tier 1,West,5,400.00625
+Buffalo,Tier 1,Midwest,3,380.178125
+Albuquerque,Tier 1,South,2.5,380.121875
+Phoenix,Tier 1,West,5,385.984375
+Portland,Tier 1,West,4.5,369.50625
+Wichita,Tier 1,Midwest,2.5,379.65
+Columbus,Tier 1,Midwest,3.5,358.865625
+Mississippi,Tier 1,South,4,381.5375
+Dayton,Tier 1,Midwest,2,351.540625
+Grand Rapids,Tier 1,Midwest,3,357.325
+Brooklyn,Tier 1,East,3.5,362.7125
+Billings,Tier 1,West,2,381.015625
+Dallas,Tier 1,South,4.5,370.0875
+Long Island,Tier 1,East,4,359.44375
+Atlantic City,Tier 1,East,3,358.025
+Cincinnati,Tier 1,Midwest,4,366.64375
+San Antonio,Tier 1,South,4.5,357.275
+Orlando,Tier 1,South,5,363.396875
+Sacramento,Tier 1,West,4,350.93125
+Chicago,Tier 2,Midwest,4.5,313.925
+Spokane,Tier 1,West,3.5,340.215625
+Memphis,Tier 1,South,4.5,352.8125
+Hawaii,Tier 2,West,3,294.540625
+WB Scranton,Tier 2,East,2,286.990625
+Richmond,Tier 2,East,3,298.80625
+Miami,Tier 1,East,4.5,358.534375
+Trenton,Tier 1,East,1.5,339.071875
+Tucson,Tier 1,South,2.5,347.109375
+Oakland,Tier 2,West,3,289.165625
+Baton Rouge,Tier 2,South,2,290.846875
+Bakersfield,Tier 1,West,1.5,326.559375
+New Orleans,Tier 2,South,5,291.984375
+Milwaukee,Tier 2,Midwest,5,291.06875
+Philadelphia,Tier 2,East,4,285.0125
+Montgomery,Tier 2,South,2.5,284.34375
+Colo Springs,Tier 1,Midwest,2.5,323.271875
+Atlanta,Tier 2,South,5,286.759375
+Ft. Wayne,Tier 2,Midwest,1.5,265.984375
+Annapolis,Tier 2,East,2.5,291.10625
+Las Vegas,Tier 2,West,3.5,264.621875
+Huntington,Tier 2,East,1,284.26875
+Salt Lake City,Tier 2,West,3.5,269.353125
+San Francisco,Tier 2,West,5,289.775
+Green Bay,Tier 2,Midwest,3.5,269.803125
+Jacksonville,Tier 2,South,4,281.996875
+Omaha,Tier 2,West,2.5,244.571875
+Tampa Bay,Tier 2,South,3.5,260.796875
+S. Dakota,Tier 2,West,1,252.44375
+Charlotte,Tier 2,South,4,254.115625
+Denver,Tier 3,West,4.5,228.715625
+Ann Arbor,Tier 2,Midwest,1,249.021875
+Toledo,Tier 2,East,2,265.175
+Indianapolis,Tier 2,Midwest,4.5,258.9875
+"Portland, ME",Tier 2,East,1,252.16875
+Des Moines,Tier 2,Midwest,3,258.796875
+Austin,Tier 3,South,3.5,210.31875
+Rhode Island,Tier 3,East,2,217.21875
+New Jersey,Tier 3,East,4,213.078125
+Akron,Tier 2,East,1.5,246.1625
+Fargo,Tier 2,West,3,241.56875
+Cleveland,Tier 3,Midwest,4,215.1125
+Kansas City,Tier 2,Midwest,3,242.015625
+West Virginia,Tier 3,Midwest,3,203.990625
+Virginia Beach,Tier 2,South,2.5,232.83125
+San Jose,Tier 3,West,3,210.8
+El Paso,Tier 3,West,2,199.89375
+Shreveport,Tier 3,South,2.5,192.31875
+New York,Tier 3,East,4.5,207.4375
+Springfield,Tier 3,East,1.5,182.23125
+Fresno,Tier 3,West,3,196.34375
+Madison,Tier 3,Midwest,1.5,198.584375
+Baltimore,Tier 3,South,4,197.74375
+Pittsburgh,Tier 3,Midwest,4.5,189.984375
+Charleston,Tier 3,South,3.5,187.128125
+Lexington,Tier 3,South,1.5,180.003125
+Boston,Tier 3,East,3.5,184.740625
+Santa Fe,Tier 3,West,1.5,169.259375
+Stockton,Tier 3,West,2,173.71875
+Morgantown,Tier 3,Midwest,1,171.328125
+Boise,Tier 3,West,1.5,178.55625
+Tulsa,Tier 3,Midwest,1.5,174.009375
+S. Illinois,Tier 3,Midwest,1,174.934375
+Manchester,Tier 3,East,1.5,167.3125
+Connecticut,Tier 3,East,2.5,178.253125
+Delaware,Tier 3,South,2.5,187.875
+Louisville,Tier 3,South,2.5,172.009375
+Detroit,Tier 4,Midwest,4,154.853125
+San Diego,Tier 4,West,3.5,147.925
+Houston,Tier 4,South,3.5,152.425
+Alaska,Tier 4,West,2,140.265625
+Lincoln,Tier 3,West,1.5,173.0125
+Savannah,Tier 3,South,2,167.203125
+Reno,Tier 4,West,2,139.825
+Syracuse,Tier 3,East,2,166.671875
+St. Louis,Tier 3,Midwest,4,174.175
+Norman,Tier 4,South,1,130.8875
+Toronto,Tier 4,East,3,136.190625
+Little Rock,Tier 4,South,2.5,141.3375
+Arlington,Tier 4,South,2,134.13125
+Winston-Salem,Tier 4,East,1.5,136.940625
+Long Beach,Tier 4,West,1,133.8625
+Birmingham,Tier 4,South,2.5,123.69375
+Vancouver,Tier 4,West,2.5,122.615625
+Montreal,Tier 4,East,3,119.95625
+Vermont,Tier 4,East,1,118.6125
+Knoxville,Tier 4,Midwest,1.5,116.85
+Macon,Tier 4,East,1,124.815625
+Tacoma,Tier 4,West,1,115.75625
+Cheyenne,Tier 4,Midwest,1,120.215625
+Anaheim,Tier 4,West,2.5,119.128125
+Gary,Tier 4,Midwest,1,112.553125
+Duluth,Tier 4,Midwest,1,105.634375
+Ft. Worth,Tier 4,South,2,110.334375
+Eugene,Tier 4,West,1,107.571875
+Davenport,Tier 4,Midwest,1,107.103125
+Winnipeg,Tier 4,Midwest,2,107.465625
+W. Texas,Tier 4,South,1,116.6
+Tallahassee,Tier 4,East,1.5,112.571875
+Nashville,Tier 4,Midwest,2.5,111.384375
+Pensacola,Tier 4,East,1,105.084375
+Ottawa,Tier 4,East,2,107.296875
+Mesa,Tier 4,South,1,102.5

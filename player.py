@@ -5,6 +5,8 @@ class Player:
     def __init__(self,pid,aim,speed,throw,hands):
         self.pid = pid
         self.aim = aim
+        self.name = None
+        self.yeargroup=None
         self.speed = speed
         self.throw = throw
         self.hands = hands
@@ -113,6 +115,18 @@ def get_improvements(gp):
         return [-1,-0.5,0,0.5,1,1.5,2,2.5,3]
     else:
         return [-0.5,0,0.5,1,1.5,2,2.5,3,3]
+
+
+class PlayerDB:
+    """
+    PlayerDB class definition (for reference)
+    """
+    def __init__(self, player_id, name, yeargroup):
+        self.player_id = player_id
+        self.name = name
+        self.yeargroup = yeargroup
+        self.seasons = []
+        self.stats = []
 
         
 def update_players(teams,schedule,week):

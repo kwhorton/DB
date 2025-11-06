@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ player.pid }}{% endblock %}
+{% block title %}{{ player.name }}{% endblock %}
 
 {% block content %}
 <style>
@@ -107,9 +107,9 @@
         align-items: center; /* Centers each item horizontally within the column */
     }
 
-.stat-sub-value span {
-  margin: 2px 0; /* Add a little vertical spacing between spans */
-}
+    .stat-sub-value span {
+      margin: 2px 0; /* Add a little vertical spacing between spans */
+    }
 
     .stat-card.avg {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -200,7 +200,7 @@
 </div>
 
 <div class="player-header">
-    <h1>{{ player.pid }}</h1>
+    <h1>{{ player.name }}</h1>
     <div class="player-id">Player ID: {{ player.pid }}</div>
     <a href="/team/{{ team.team_name }}" class="player-team">{{ team.team_name }}</a>
 </div>
