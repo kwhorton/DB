@@ -1,0 +1,7 @@
+Structure
+
+Back-end: Game/tourney simulation; update team after matchup; 
+
+Front-end1: Webpage that mirrors a sports site; Schedule/Results, Standings, Players, etc.
+Front-end2: Viewing a matchup
+Front-end3: Historical results
