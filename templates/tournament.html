@@ -209,6 +209,78 @@
             flex-grow: 1;
         }
 
+        .team-details {
+            font-size: 8px;
+            color: #666;
+            margin-top: 3px;
+            display: flex;
+            gap: 10px;
+            line-height: 1.3;
+        }
+
+        .team-detail-item {
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+            
+        .team-detail-item span {
+            font-weight: normal;
+        }
+
+        .team-detail-item strong {
+            font-weight: 600;
+        }
+        .placement-list {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .placement-list h3 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .placement-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .placement-item {
+            padding: 8px 12px;
+            border-radius: 5px;
+            border: 2px solid #ddd;
+            font-size: 14px;
+        }
+
+        .placement-item.revealed {
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            border-color: #4caf50;
+        }
+
+        .placement-item.tbd {
+            background: #f5f5f5;
+            color: #999;
+            font-style: italic;
+        }
+
+        .placement-rank {
+            font-weight: bold;
+            color: #667eea;
+            margin-right: 8px;
+        }
+
+        .placement-item.revealed .placement-rank {
+            color: #2e7d32;
+        }
+
         .team-scores {
             display: flex;
             gap: 8px;
@@ -573,6 +645,10 @@
             const team1Won = match.winner === 1;
             const team2Won = match.winner === 2;
 
+            // Get team info
+            const team1Info = tournamentData.teams_info[match.team1_name];
+            const team2Info = tournamentData.teams_info[match.team2_name];
+            
             let team1ScoresHTML = '';
             let team2ScoresHTML = '';
 
@@ -619,17 +695,147 @@
                 <div class="match" id="match-${matchIndex}">
                     <div class="match-header">${matchId} <span class="best-of">(Bo5)</span></div>
                     <div class="team ${team1Won && state.mode === 'final' ? 'winner' : ''}">
-                        <span class="team-name">${match.team1_name}</span>
+                        <div style="flex-grow: 1;">
+                            <div class="team-name">(${team1Info.seed}) ${match.team1_name}</div>
+                            <div class="team_details">
+                                <div class = "team-detail-item">
+                                    <span>Score:</span>
+                                    <strong>${team1Info.score}</strong>
+                                </div>
+                                <div class = "team-detail-item">
+                                    <span>Rating:</span>
+                                    <strong>${team1Info.rating}</strong>
+                                </div>
+                            </div>
+                        </div>
                         ${team1ScoresHTML}
                     </div>
                     <div class="team ${team2Won && state.mode === 'final' ? 'winner' : ''}">
-                        <span class="team-name">${match.team2_name}</span>
+                        <div style="flex-grow: 1;">
+                            <div class="team-name">(${team2Info.seed}) ${match.team2_name}</div>
+                            <div class="team_details">
+                                <div class = "team-detail-item">
+                                    <span>Score:</span>
+                                    <strong>${team2Info.score}</strong>
+                                </div>
+                                <div class = "team-detail-item">
+                                    <span>Rating:</span>
+                                    <strong>${team2Info.rating}</strong>
+                                </div>
+                            </div>
+                        </div>
                         ${team2ScoresHTML}
                     </div>
                 </div>
             `;
         }
 
+     function getPlacementInfo() {
+            const placements = Array(8).fill(null);
+            
+            // 7th/8th place - Match 6
+            if (matchStates[6] && (matchStates[6].mode === 'final' || matchStates[6].mode === 'progressive')) {
+                const match = tournamentData.matches[6];
+                if (match.winner === 1) {
+                    placements[6] = { name: match.team1_name, seed: tournamentData.teams_info[match.team1_name].seed };
+                    placements[7] = { name: match.team2_name, seed: tournamentData.teams_info[match.team2_name].seed };
+                } else if (match.winner === 2) {
+                    placements[6] = { name: match.team2_name, seed: tournamentData.teams_info[match.team2_name].seed };
+                    placements[7] = { name: match.team1_name, seed: tournamentData.teams_info[match.team1_name].seed };
+                }
+            }
+            
+            // 5th/6th place - Match 11
+            if (matchStates[11] && (matchStates[11].mode === 'final' || matchStates[11].mode === 'progressive')) {
+                const match = tournamentData.matches[11];
+                if (match.winner === 1) {
+                    placements[4] = { name: match.team1_name, seed: tournamentData.teams_info[match.team1_name].seed };
+                    placements[5] = { name: match.team2_name, seed: tournamentData.teams_info[match.team2_name].seed };
+                } else if (match.winner === 2) {
+                    placements[4] = { name: match.team2_name, seed: tournamentData.teams_info[match.team2_name].seed };
+                    placements[5] = { name: match.team1_name, seed: tournamentData.teams_info[match.team1_name].seed };
+                }
+            }
+            
+            // 4th place - Loser of Losers Round 3 Final (Match 12)
+            if (matchStates[12] && (matchStates[12].mode === 'final' || matchStates[12].mode === 'progressive')) {
+                const match = tournamentData.matches[12];
+                if (match.winner === 1) {
+                    placements[3] = { name: match.team2_name, seed: tournamentData.teams_info[match.team2_name].seed };
+                } else if (match.winner === 2) {
+                    placements[3] = { name: match.team1_name, seed: tournamentData.teams_info[match.team1_name].seed };
+                }
+            }
+            
+            // 3rd place - Loser of Losers Final (Match 14)
+            if (matchStates[14] && (matchStates[14].mode === 'final' || matchStates[14].mode === 'progressive')) {
+                const match = tournamentData.matches[14];
+                if (match.winner === 1) {
+                    placements[2] = { name: match.team2_name, seed: tournamentData.teams_info[match.team2_name].seed };
+                } else if (match.winner === 2) {
+                    placements[2] = { name: match.team1_name, seed: tournamentData.teams_info[match.team1_name].seed };
+                }
+            }
+            
+            // 1st and 2nd place - Grand Finals
+            // Check if Grand Final 2 (Match 16) exists and was played
+            const gf2Match = tournamentData.matches[16];
+            if (gf2Match && matchStates[16] && (matchStates[16].mode === 'final' || matchStates[16].mode === 'progressive')) {
+                // Grand Final 2 determines 1st and 2nd
+                if (gf2Match.winner === 1) {
+                    placements[0] = { name: gf2Match.team1_name, seed: tournamentData.teams_info[gf2Match.team1_name].seed };
+                    placements[1] = { name: gf2Match.team2_name, seed: tournamentData.teams_info[gf2Match.team2_name].seed };
+                } else if (gf2Match.winner === 2) {
+                    placements[0] = { name: gf2Match.team2_name, seed: tournamentData.teams_info[gf2Match.team2_name].seed };
+                    placements[1] = { name: gf2Match.team1_name, seed: tournamentData.teams_info[gf2Match.team1_name].seed };
+                }
+            } else if (matchStates[15] && (matchStates[15].mode === 'final' || matchStates[15].mode === 'progressive')) {
+                // Grand Final 1 determines placement (if GF2 didn't happen or isn't revealed yet)
+                const gf1Match = tournamentData.matches[15];
+                if (gf1Match.winner === 1) {
+                    // Winners side won
+                    placements[0] = { name: gf1Match.team1_name, seed: tournamentData.teams_info[gf1Match.team1_name].seed };
+                    placements[1] = { name: gf1Match.team2_name, seed: tournamentData.teams_info[gf1Match.team2_name].seed };
+                } else if (gf1Match.winner === 2 && !gf2Match) {
+                    // Losers side won and there's no GF2, so they're champs
+                    placements[0] = { name: gf1Match.team2_name, seed: tournamentData.teams_info[gf1Match.team2_name].seed };
+                    placements[1] = { name: gf1Match.team1_name, seed: tournamentData.teams_info[gf1Match.team1_name].seed };
+                }
+                // If losers side won GF1 and GF2 exists but isn't revealed yet, don't show 1st/2nd
+            }
+            
+            return placements;
+        }
+
+        function createPlacementHTML() {
+            const placements = getPlacementInfo();
+            const placementNames = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'];
+            
+            let html = '<div class="placement-list"><h3>Tournament Placements</h3><div class="placement-grid">';
+            
+            for (let i = 0; i < 8; i++) {
+                const placement = placements[i];
+                if (placement) {
+                    html += `
+                        <div class="placement-item revealed">
+                            <span class="placement-rank">${placementNames[i]}:</span>
+                            (${placement.seed}) ${placement.name}
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div class="placement-item tbd">
+                            <span class="placement-rank">${placementNames[i]}:</span>
+                            TBD
+                        </div>
+                    `;
+                }
+            }
+            
+            html += '</div></div>';
+            return html;
+        }
+          
         function renderTournament() {
             const container = document.getElementById('tournamentBracket');
             const m = tournamentData.matches;
@@ -640,6 +846,9 @@
             const placementButtons = getSectionButtonStates('placement');
 
             container.innerHTML = `
+
+                ${createPlacementHTML()}
+            
                 <!-- Winners Bracket -->
                 <div class="bracket-section">
                     <div class="bracket-header">

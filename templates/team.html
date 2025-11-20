@@ -206,6 +206,7 @@
                         color: #333;
                         cursor: pointer;
                         transition: color 0.2s;
+                        text-transform: none;
                     }
 
                     .player-name-cell:hover {
@@ -243,7 +244,7 @@
                     <tbody>
                         {% for player in players %}
                         <tr onclick="window.location.href='/player/{{ player.pid }}'">
-                            <td class = "player-name-cell">{{ player.name }}</td>
+                            <td class = "player-name-cell">{{ player.name|short_name }}</td>
                             <td class="stat-cell">
                                 <div class="avg-stat">{{ "%.2f"|format(player.avg_stats) }}</div>
                                 <div class="stat-breakdown">(A:{{ "%.1f"|format(player.aim) }} S:{{ "%.1f"|format(player.speed) }} T:{{ "%.1f"|format(player.throw) }} H:{{ "%.1f"|format(player.hands) }})</div>

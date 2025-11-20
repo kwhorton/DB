@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import io
 import base64
 import pickle
-from show_standings import *
 from show_results import *
+from show_standings import *
 import os
 
 with open("season.pkl","rb") as f:
@@ -21,7 +21,20 @@ app.secret_key = 'your_secret_key'  # Set a proper secret key
 
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 
+def format_full_name(name):
+    """Convert 'JOHN DOE' to 'John Doe'"""
+    return name.title()
+
+def format_short_name(name):
+    """Convert 'JOHN DOE' to 'J. Doe'"""
+    parts = name.split()
+    if len(parts) >= 2:
+        return f"{parts[0][0]}. {parts[-1].title()}"
+    return name.title()
+
 app.jinja_env.filters['ordinal'] = ordinal
+app.jinja_env.filters['full_name'] = format_full_name
+app.jinja_env.filters['short_name'] = format_short_name
 
 @app.before_request
 def set_current_week():
@@ -45,7 +58,9 @@ def inject_current_week():
 def index():
     current_week = session.get('current_week', 1)
     standings_data = get_standings_by_division(teams, schedule, all_tourneys, current_week)
-    return render_template("index.html", standings_data=standings_data)
+    playoff_standings = get_playoff_standings(teams, schedule, all_tourneys, current_week)
+
+    return render_template("index.html", standings_data=standings_data, playoff_standings=playoff_standings)
 
 @app.route('/team/<team_name>')
 def team_page(team_name):
@@ -76,6 +91,7 @@ def team_page(team_name):
                 
         players.append({
             'pid': player.pid,
+            'name': player.name,
             'avg_stats': avg_stats,
             'aim': stats[0],
             'speed': stats[1],
@@ -204,12 +220,21 @@ def view_tournament(tournament_id):
 
     tourney = all_tourneys[tournament_id]
     # Prepare tournament data
+    teams_info = {}
+    i = 1
+    for team in tourney.team_list:
+        
+        team_ratings = get_week_rating(team,tourney.week)
+        team_rating = 0.25*(team_ratings['Aim']+team_ratings['Speed']+team_ratings['Throw']+team_ratings['Hands'])
+        teams_info[team.team_name] = {
+                           'seed': i,
+                           'score': sum(team.score[0:(tourney.week+1)]),
+                           'rating': round(team_rating,1)
+                          }
+        i+=1
     tournament_data = {
         'week': tourney.week,
-        'teams': [
-            {'seed': i+1, 'name': team.team_name} 
-            for i, team in enumerate(tourney.team_list)
-        ],
+        'teams_info': teams_info,
         'matches': []
     }
     

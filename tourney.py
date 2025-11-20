@@ -14,26 +14,29 @@ class Tournament:
 
     def run_tourney(self):
         
-        sorted_teams = sorted(self.team_list, key=lambda team: team.score, reverse=True)
-
+        self.team_list.sort(key=lambda t: (
+            -sum(t.score),
+            -t.score.count(21),
+            -t.score[0:4].count(15)))
+        
         # Round 1
         #1 v 8
-        match1 = Match(sorted_teams[0],sorted_teams[7],"T", self.year, self.week)
+        match1 = Match(self.team_list[0],self.team_list[7],"T", self.year, self.week)
         match1.run_match()
         self.matches.append(match1)
 
         #4 v 5
-        match2 = Match(sorted_teams[3],sorted_teams[4],"T", self.year, self.week)
+        match2 = Match(self.team_list[3],self.team_list[4],"T", self.year, self.week)
         match2.run_match()
         self.matches.append(match2)
 
         #3 v 6
-        match3 = Match(sorted_teams[2],sorted_teams[5],"T", self.year, self.week)
+        match3 = Match(self.team_list[2],self.team_list[5],"T", self.year, self.week)
         match3.run_match()
         self.matches.append(match3)
 
         #2 v 7
-        match4 = Match(sorted_teams[1],sorted_teams[6],"T", self.year, self.week)
+        match4 = Match(self.team_list[1],self.team_list[6],"T", self.year, self.week)
         match4.run_match()
         self.matches.append(match4)
 
@@ -170,11 +173,23 @@ def get_tourney_list(teams,tourney_type):
 
     elif tourney_type == "Score":
 
-        teams_east = sorted(teams_east, key = lambda team: team.score, reverse = True)
-        teams_midwest = sorted(teams_midwest, key = lambda team: team.score, reverse = True)
-        teams_south = sorted(teams_south, key = lambda team: team.score, reverse = True)
-        teams_west = sorted(teams_west, key = lambda team: team.score, reverse = True)
-
+        teams_east.sort(key=lambda t: (
+            -sum(t.score),
+            -t.score.count(21),
+            -t.score[0:4].count(15)))
+        teams_midwest.sort(key=lambda t: (
+            -sum(t.score),
+            -t.score.count(21),
+            -t.score[0:4].count(15)))
+        teams_west.sort(key=lambda t: (
+            -sum(t.score),
+            -t.score.count(21),
+            -t.score[0:4].count(15)))
+        teams_south.sort(key=lambda t: (
+            -sum(t.score),
+            -t.score.count(21),
+            -t.score[0:4].count(15)))
+        
         teams_list = [[teams_east[0],teams_east[1],teams_midwest[0],teams_midwest[1],teams_south[0],teams_south[1],teams_west[0],teams_west[1]],
                       [teams_east[2],teams_east[3],teams_midwest[2],teams_midwest[3],teams_south[2],teams_south[3],teams_west[2],teams_west[3]],
                       [teams_east[4],teams_east[5],teams_midwest[4],teams_midwest[5],teams_south[4],teams_south[5],teams_west[4],teams_west[5]],

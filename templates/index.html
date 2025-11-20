@@ -146,7 +146,94 @@
         .col-h2h {
             width: 50px;
         }
+
+        /* Playoff Standings Styles */
+
+        .playoff-section {
+            margin-top: 50px;
+        }
+
+        .playoff-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .playoff-header {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 20px;
+            font-size: 22px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .playoff-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .playoff-table th {
+            background: #f8f9fa;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+            color: #555;
+            border-bottom: 2px solid #ddd;
+            font-size: 14px;
+        }
+
+        .playoff-table td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .playoff-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .playoff-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .playoff-cutoff {
+            border-bottom: 3px solid #e74c3c !important;
+            position: relative;
+        }
+
+        .playoff-cutoff::after {
+            content: 'PLAYOFF LINE';
+            position: absolute;
+            right: 10px;
+            bottom: -12px;
+            font-size: 10px;
+            font-weight: bold;
+            color: #e74c3c;
+            background: white;
+            padding: 0 5px;
+        }
+
+        .division-leader-badge {
+            display: inline-block;
+            background: #4CAF50;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+
+        .wildcard-position {
+            color: #999;
+            font-size: 12px;
+            margin-left: 5px;
+        }
     </style>
+
 </head>
 <body>
     <div class="menu">
@@ -192,6 +279,49 @@
     </div>
     {% endfor %}
     </div>
+
+    <!-- Playoff Standings Section -->
+    <div class="playoff-section">
+        <div class="playoff-card">
+            <div class="playoff-header">Playoff Standings</div>
+            <table class="playoff-table">
+                <thead>
+                    <tr>
+                        <th class="col-rank">#</th>
+                        <th class="col-team">Team</th>
+                        <th class="col-team">Division</th>
+                        <th class="col-rating">Rating</th>
+                        <th class="col-score">Score</th>
+                        <th class="col-fp">FP</th>
+                        <th class="col-h2h">H2H</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for team_data in playoff_standings %}
+                    <tr onclick="window.location.href='/team/{{ team_data.team.team_name }}'" 
+                        {% if loop.index == 12 %}class="playoff-cutoff"{% endif %}>
+                        <td class="rank">{{ loop.index }}</td>
+                        <td class="team-name">
+                            <a href="/team/{{ team_data.team.team_name }}">{{ team_data.team.team_name }}</a>
+                            {% if team_data.is_leader %}
+                            <span class="division-leader-badge">DIV</span>
+                            {% elif loop.index <= 12 %}
+                            <span class="wildcard-position">(WC)</span>
+                            {% endif %}
+                        </td>
+                        <td class="stat">{{ team_data.division }}</td>
+                        <td class="stat">{{ "%.2f"|format(team_data.rating) }}</td>
+                        <td class="stat">{{ team_data.score }}</td>
+                        <td class="stat">{{ team_data.fp }}</td>
+                        <td class="stat">{{ team_data.h2h }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+            
     {% endblock %}
  <!--   </div> -->
 </html>

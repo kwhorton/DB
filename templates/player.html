@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ player.name }}{% endblock %}
+{% block title %}{{ player.name|full_name }}{% endblock %}
 
 {% block content %}
 <style>
@@ -36,6 +36,7 @@
         margin: 0 0 10px 0;
         color: #333;
         font-size: 32px;
+        text-transform: none;
     }
 
     .player-header .player-id {
@@ -108,6 +109,20 @@
     }
 
     .stat-sub-value span {
+      margin: 2px 0; /* Add a little vertical spacing between spans */
+    }
+
+    .stat-rank {
+        font-size: 0.7em; /* Make the sub-value smaller */
+        color: #888;
+        display: flex; /* Use flexbox for horizontal arrangement */
+        justify-content: center; /* Horizontally center the content */
+        flex-direction: column; /* Stack spans vertically */
+        align-items: center; /* Centers each item horizontally within the column */
+        margin-top: 8px;
+    }
+
+    .stat-rank span {
       margin: 2px 0; /* Add a little vertical spacing between spans */
     }
 
@@ -200,7 +215,7 @@
 </div>
 
 <div class="player-header">
-    <h1>{{ player.name }}</h1>
+    <h1>{{ player.name|full_name }}</h1>
     <div class="player-id">Player ID: {{ player.pid }}</div>
     <a href="/team/{{ team.team_name }}" class="player-team">{{ team.team_name }}</a>
 </div>
