@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dodgeball Game Animation - {{ match_info.team1 }} vs {{ match_info.team2 }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        
+        .back-button {
+            margin-bottom: 20px;
+            align-self: flex-start;
+        }
+
+        .back-button a {
+            display: inline-block;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .back-button a:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+        }
+        
+        .nav-button {
+            display: inline-block;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .nav-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(46, 204, 113, 0.4);
+        }
+        
+        .match-header-info {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .team-names {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .week-info {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        .score-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        
+        .h2h-score {
+            flex-wrap: wrap;
+        }
+        
+        .score-section {
+            text-align: center;
+        }
+        
+        .score-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
+        .score-values {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 36px;
+            font-weight: bold;
+        }
+        
+        .team1-score {
+            color: #3498db;
+        }
+        
+        .team2-score {
+            color: #e74c3c;
+        }
+        
+        .score-separator {
+            color: #999;
+            font-size: 28px;
+        }
+        
+        .score-divider {
+            font-size: 32px;
+            color: #ddd;
+            font-weight: 300;
+        }
+        
+        .game-label {
+            grid-column: 1 / -1;
+            font-size: 14px;
+            color: #667eea;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        
+        .tournament-score {
+            flex-direction: column;
+        }
+        
+        .game-navigation {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        .next-game-btn {
+            padding: 12px 30px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            color: white;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .next-game-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(46, 204, 113, 0.4);
+        }
+        
+        .match-complete {
+            text-align: center;
+            padding: 15px;
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            color: white;
+            border-radius: 8px;
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            margin-bottom: 10px;
+        }
+        
+        .match-title {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        #gameCanvas {
+            border: 3px solid #333;
+            background-color: #8B4513;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #4CAF50;
+            color: white;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        input[type="range"] {
+            width: 150px;
+        }
+        
+        .info-panel {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            min-width: 600px;
+        }
+        
+        .play-info {
+            font-size: 18px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
+        .team-info {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 10px;
+        }
+        
+        .team {
+            text-align: center;
+        }
+        
+        .team h3 {
+            margin: 5px 0;
+            color: #333;
+        }
+        
+        .team1 h3 {
+            color: #3498db;
+        }
+        
+        .team2 h3 {
+            color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="back-button">
+        {% if match_info.is_tournament %}
+        <a href="{{ url_for('view_tournament', tournament_id=match_info.tournament) }}">← Back to Tournament</a>
+        {% else %}
+        <a href="{{ url_for('wkschedule', week=match_info.week) }}">← Back to Week {{ match_info.week }}</a>
+        {% endif %}
+    </div>
+
+    <h1>Dodgeball Game Animation</h1>
+    
+    <div class="match-header-info">
+        <div class="team-names">{{ match_info.team1 }} vs {{ match_info.team2 }}</div>
+        <div class="week-info">Week {{ match_info.week }}</div>
+        
+        {% if match_info.is_tournament %}
+        <!-- Tournament: Show game score -->
+        <div class="score-display tournament-score">
+            <div class="score-label">Match Score</div>
+            <div class="score-values">
+                <span class="team1-score">{{ match_info.game_scores[0] }}</span>
+                <span class="score-separator">-</span>
+                <span class="team2-score">{{ match_info.game_scores[1] }}</span>
+            </div>
+            <div class="game-label">Game {{ match_info.game_number }} </div>
+        </div>
+        {% else %}
+        <!-- Head-to-Head: Show set score and game score -->
+        <div class="score-display h2h-score">
+            <div class="score-section">
+                <div class="score-label">Set Score</div>
+                <div class="score-values">
+                    <span class="team1-score">{{ match_info.set_scores[0] }}</span>
+                    <span class="score-separator">-</span>
+                    <span class="team2-score">{{ match_info.set_scores[1] }}</span>
+                </div>
+            </div>
+            <div class="score-divider">|</div>
+            <div class="score-section">
+                <div class="score-label">Set {{ match_info.current_set }} Games</div>
+                <div class="score-values">
+                    <span class="team1-score">{{ match_info.game_scores[0] }}</span>
+                    <span class="score-separator">-</span>
+                    <span class="team2-score">{{ match_info.game_scores[1] }}</span>
+                </div>
+            </div>
+            <div class="game-label">Game {{ match_info.game_in_set }} of Set {{ match_info.current_set }}</div>
+        </div>
+        {% endif %}
+    </div>
+    
+    {% if match_info.game_number < match_info.total_games %}
+    <div class="game-navigation">
+        {% if match_info.is_tournament %}
+        <button class="nav-button next-game-btn" onclick="window.location.href='{{ url_for('animate_tournament_match', tournament_id=match_info.tournament, match_index=match_index, game_index=game_index+1) }}'">
+            Next Game →
+        </button>
+        {% else %}
+        <button class="nav-button next-game-btn" onclick="window.location.href='{{ url_for('animate_match', match_index=match_index, game_index=game_index+1) }}'">
+            Next Game →
+        </button>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="match-complete">
+        <strong>Match Complete!</strong>
+    </div>
+    {% endif %}
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
+    
+    <div class="controls">
+        <button id="playBtn">Play</button>
+        <button id="pauseBtn" disabled>Pause</button>
+        <button id="resetBtn">Reset</button>
+        <div class="speed-control">
+            <label>Speed:</label>
+            <input type="range" id="speedSlider" min="0.5" max="3" step="0.5" value="1">
+            <span id="speedLabel">1x</span>
+        </div>
+    </div>
+    
+    <div class="info-panel">
+        <div class="play-info" id="playInfo">Ready to start</div>
+        <div class="team-info">
+            <div class="team team1">
+                <h3>{{ match_info.team1 }}</h3>
+                <div id="team1Info">Players: 5 | Balls: 0</div>
+            </div>
+            <div class="team team2">
+                <h3>{{ match_info.team2 }}</h3>
+                <div id="team2Info">Players: 5 | Balls: 0</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game log from Flask
+        const gameLog = {{ game_log | tojson }};
+        
+        // Player names lookup from Flask
+        const playerNames = {{ player_names | tojson }};
+        
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Game state
+        let currentPlay = 0;
+        let isPlaying = false;
+        let animationFrame = null;
+        let playSpeed = 1;
+        let throwAnimation = null;
+        
+        // Determine teams from initial state
+        const initialAlive = gameLog[0].Alive;
+        const team1Players = initialAlive.slice(0, Math.floor(initialAlive.length / 2));
+        const team2Players = initialAlive.slice(Math.floor(initialAlive.length / 2));
+        
+        // Player positions
+        const playerPositions = {};
+        
+        function initializePositions() {
+            const team1Count = team1Players.length;
+            const team2Count = team2Players.length;
+            
+            // Position team 1 on left side
+            team1Players.forEach((player, idx) => {
+                playerPositions[player] = {
+                    x: 100,
+                    y: 100 + (idx * 250 / Math.max(1, team1Count - 1))
+                };
+            });
+            
+            // Position team 2 on right side
+            team2Players.forEach((player, idx) => {
+                playerPositions[player] = {
+                    x: 700,
+                    y: 100 + (idx * 250 / Math.max(1, team2Count - 1))
+                };
+            });
+        }
+        
+        function drawCourt() {
+            // Clear canvas
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw center line
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([10, 5]);
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Draw team zones
+            ctx.fillStyle = 'rgba(52, 152, 219, 0.1)';
+            ctx.fillRect(0, 0, canvas.width / 2, canvas.height);
+            ctx.fillStyle = 'rgba(231, 76, 60, 0.1)';
+            ctx.fillRect(canvas.width / 2, 0, canvas.width / 2, canvas.height);
+        }
+        
+        function drawPlayer(playerId, isAlive, hasBall) {
+            const pos = playerPositions[playerId];
+            if (!pos) return;
+            
+            const isTeam1 = team1Players.includes(playerId);
+            
+            // Draw player circle
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, 20, 0, Math.PI * 2);
+            
+            if (isAlive) {
+                ctx.fillStyle = isTeam1 ? '#3498db' : '#e74c3c';
+                ctx.fill();
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            } else {
+                ctx.fillStyle = '#999';
+                ctx.fill();
+                ctx.strokeStyle = '#666';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Draw X over eliminated players
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(pos.x - 15, pos.y - 15);
+                ctx.lineTo(pos.x + 15, pos.y + 15);
+                ctx.moveTo(pos.x + 15, pos.y - 15);
+                ctx.lineTo(pos.x - 15, pos.y + 15);
+                ctx.stroke();
+            }
+            
+            // Draw ball if player has one
+            if (hasBall && isAlive) {
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y - 30, 6, 0, Math.PI * 2);
+                ctx.fillStyle = '#f39c12';
+                ctx.fill();
+                ctx.strokeStyle = '#d68910';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+            
+            // Draw player name (or ID if name not available)
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 9px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // Get player name, or use last 4 chars of ID as fallback
+            const displayName = playerNames[playerId] || playerId.substring(playerId.length - 4);
+            
+            // If name is available, show first name only (split on space, take second part)
+            const shortName = displayName.includes(' ') ? displayName.split(' ')[1] : displayName;
+            
+            // Truncate if too long
+            const finalName = shortName.length > 10 ? shortName.substring(0, 8) : shortName;
+            
+            ctx.fillText(finalName, pos.x, pos.y);
+        }
+        
+        function drawReservoirs(reservoir1, reservoir2) {
+            // Team 1 reservoir (left)
+            ctx.fillStyle = '#3498db';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(`Reservoir: ${reservoir1}`, 100, 30);
+            
+            // Team 2 reservoir (right)
+            ctx.fillStyle = '#e74c3c';
+            ctx.fillText(`Reservoir: ${reservoir2}`, 700, 30);
+        }
+        
+        function drawThrowAnimation(thrower, target, progress, result) {
+            if (!thrower || !target) return;
+            
+            const startPos = playerPositions[thrower];
+            const endPos = playerPositions[target];
+            
+            if (!startPos || !endPos) return;
+            
+            // Calculate ball position
+            const x = startPos.x + (endPos.x - startPos.x) * progress;
+            const y = startPos.y + (endPos.y - startPos.y) * progress - Math.sin(progress * Math.PI) * 30;
+            
+            // Draw ball
+            ctx.beginPath();
+            ctx.arc(x, y, 8, 0, Math.PI * 2);
+            ctx.fillStyle = '#f39c12';
+            ctx.fill();
+            ctx.strokeStyle = '#d68910';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Draw result indicator when animation completes
+            if (progress >= 1) {
+                ctx.font = 'bold 20px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                if (result === 'Hit') {
+                    ctx.fillStyle = '#e74c3c';
+                    ctx.fillText('HIT!', endPos.x, endPos.y - 50);
+                } else if (result === 'Block') {
+                    ctx.fillStyle = '#f39c12';
+                    ctx.fillText('BLOCK!', endPos.x, endPos.y - 50);
+                } else if (result === 'Catch') {
+                    ctx.fillStyle = '#2ecc71';
+                    ctx.fillText('CATCH!', endPos.x, endPos.y - 50);
+                } else if (result === 'Miss') {
+                    ctx.fillStyle = '#95a5a6';
+                    ctx.fillText('MISS', endPos.x + 30, endPos.y);
+                }
+            }
+        }
+        
+        function updateInfoPanel() {
+            const play = gameLog[currentPlay];
+            
+            // Update play info
+            let playText = `Play ${currentPlay + 1}`;
+            if (play.Thrower && play.Target) {
+                const throwerName = playerNames[play.Thrower] || play.Thrower;
+                const targetName = playerNames[play.Target] || play.Target;
+                playText += ` - ${throwerName} throws at ${targetName}: ${play.Result}`;
+            } else if (currentPlay === 0) {
+                playText = 'Initial Setup';
+            }
+            document.getElementById('playInfo').textContent = playText;
+            
+            // Update team info
+            const team1Alive = play.Alive.filter(p => team1Players.includes(p)).length;
+            const team2Alive = play.Alive.filter(p => team2Players.includes(p)).length;
+            const team1Balls = play.Holders.filter(p => team1Players.includes(p)).length;
+            const team2Balls = play.Holders.filter(p => team2Players.includes(p)).length;
+            
+            document.getElementById('team1Info').textContent = 
+                `Players: ${team1Alive} | Balls: ${team1Balls} | Reservoir: ${play.Reservoir1}`;
+            document.getElementById('team2Info').textContent = 
+                `Players: ${team2Alive} | Balls: ${team2Balls} | Reservoir: ${play.Reservoir2}`;
+        }
+        
+        function render() {
+            // Use previous play's state for drawing players until throw completes
+            const displayPlay = throwAnimation && throwAnimation.progress < 1.0 
+                ? (currentPlay > 0 ? gameLog[currentPlay - 1] : gameLog[0])
+                : gameLog[currentPlay];
+            
+            drawCourt();
+            drawReservoirs(displayPlay.Reservoir1, displayPlay.Reservoir2);
+            
+            // Draw all players using the display state
+            [...team1Players, ...team2Players].forEach(playerId => {
+                const isAlive = displayPlay.Alive.includes(playerId);
+                const hasBall = displayPlay.Holders.includes(playerId);
+                drawPlayer(playerId, isAlive, hasBall);
+            });
+            
+            // Draw throw animation if active
+            if (throwAnimation) {
+                drawThrowAnimation(
+                    throwAnimation.thrower,
+                    throwAnimation.target,
+                    throwAnimation.progress,
+                    throwAnimation.result
+                );
+            }
+            
+            // Update info panel with current play info (not affected by animation timing)
+            updateInfoPanel();
+        }
+        
+        function animate() {
+            if (!isPlaying) return;
+            
+            if (throwAnimation) {
+                throwAnimation.progress += 0.02 * playSpeed;
+                
+                if (throwAnimation.progress >= 1.3) {
+                    throwAnimation = null;
+                    currentPlay++;
+                    
+                    if (currentPlay >= gameLog.length) {
+                        pause();
+                        return;
+                    }
+                    
+                    const nextPlay = gameLog[currentPlay];
+                    if (nextPlay.Thrower && nextPlay.Target) {
+                        throwAnimation = {
+                            thrower: nextPlay.Thrower,
+                            target: nextPlay.Target,
+                            result: nextPlay.Result,
+                            progress: 0
+                        };
+                    }
+                }
+            } else {
+                const play = gameLog[currentPlay];
+                if (play.Thrower && play.Target) {
+                    throwAnimation = {
+                        thrower: play.Thrower,
+                        target: play.Target,
+                        result: play.Result,
+                        progress: 0
+                    };
+                } else {
+                    currentPlay++;
+                    if (currentPlay >= gameLog.length) {
+                        pause();
+                        return;
+                    }
+                }
+            }
+            
+            render();
+            animationFrame = requestAnimationFrame(animate);
+        }
+        
+        function play() {
+            if (currentPlay >= gameLog.length - 1) {
+                reset();
+            }
+            isPlaying = true;
+            document.getElementById('playBtn').disabled = true;
+            document.getElementById('pauseBtn').disabled = false;
+            animate();
+        }
+        
+        function pause() {
+            isPlaying = false;
+            document.getElementById('playBtn').disabled = false;
+            document.getElementById('pauseBtn').disabled = true;
+            if (animationFrame) {
+                cancelAnimationFrame(animationFrame);
+            }
+        }
+        
+        function reset() {
+            pause();
+            currentPlay = 0;
+            throwAnimation = null;
+            render();
+        }
+        
+        // Event listeners
+        document.getElementById('playBtn').addEventListener('click', play);
+        document.getElementById('pauseBtn').addEventListener('click', pause);
+        document.getElementById('resetBtn').addEventListener('click', reset);
+        
+        document.getElementById('speedSlider').addEventListener('input', (e) => {
+            playSpeed = parseFloat(e.target.value);
+            document.getElementById('speedLabel').textContent = playSpeed + 'x';
+        });
+        
+        // Initialize
+        initializePositions();
+        render();
+    </script>
+</body>
+</html>

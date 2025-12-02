@@ -333,6 +333,16 @@
             background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
         }
 
+        .watch-animation {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+            border: none;
+        }
+
+        .watch-animation:hover {
+            background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+        }
+
         .no-data {
             text-align: center;
             color: #999;
@@ -432,6 +442,9 @@
                         <tr>
                             <th colspan="100%">
                                 {% if show_results %}
+                                    <button class="watch-animation" onclick="window.location.href='{{ url_for('animate_match', match_index=event.schedule_index) }}'">
+                                        🎬 Watch Animation
+                                    </button>
                                 <div class="buttons-group">
                                     <button class="toggle-scores" onclick="toggleScores(this)">
                                         Show Scores
