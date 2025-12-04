@@ -38,7 +38,7 @@ app.jinja_env.filters['short_name'] = format_short_name
 
 @app.before_request
 def set_current_week():
-    # Get current week from session or default to 1
+    # Get current week from session or default to 0
     if 'current_week' not in session:
         session['current_week'] = 1
     
@@ -51,7 +51,7 @@ def set_current_week():
 
 @app.context_processor
 def inject_current_week():
-    return {'current_week': session.get('current_week', 1)}
+    return {'current_week': session.get('current_week', 0)}
 
 @app.route("/")
 
@@ -84,8 +84,11 @@ def team_page(team_name):
             if stat['Week'] <= current_week:
                 gp_total += stat['GP']
 
-            if stat['Week'] == current_week:
+            if stat['Week'] == current_week and current_week > 0:
                 stats = [stat['Aim'],stat['Speed'],stat['Throw'],stat['Hands']]
+            # For week 0, use initial stats
+            if current_week == 0:
+                stats = [player.aim, player.speed, player.throw, player.hands]
         avg_stats = sum(stats)/len(stats)
 
                 
@@ -129,8 +132,12 @@ def wkschedule(week = None):
         tourney_show = week_num not in [7,11,14]
 
     display_week = min(week_num,current_week)
-    end = (display_week>=3)*(display_week+1) + (display_week<3)*(2*display_week-2) 
-    end = int(end)
+    # For week 0 (preseason), show no results
+    if display_week == 0:
+        end = 0
+    else:
+        end = (display_week>=3)*(display_week+1) + (display_week<3)*(2*display_week-2) 
+        end = int(end)
 
     #if selected_week in [1, 1.5, 2, 2.5]:
     if week_num in [1, 1.5, 2, 2.5]:
@@ -309,9 +316,26 @@ def player_page(pid):
             })
 
 
+    # For week 0, use initial player stats; for other weeks, get computed ranks
+    #if current_week == 0:
+        # Create initial stats for preseason
+        #starting_stats = [stat for stat in player.all_stats if stat['Week']==1]
+        #starting_stats = starting_stats[0]
+        #current_stats = [{
+        #    'pid': player.pid,
+        #    'division': player_team.division,
+        #    'aim': starting_stats['Aim'],
+        #    'speed': starting_stats['Speed'],
+        #    'throw': starting_stats['Throw'],
+        #    'hands': starting_stats['Hands'],
+        #    'total': 0.25*(starting_stats['Aim'] + starting_stats['Speed'] + starting_stats['Throw'] + starting_stats['Hands']),
+       #     'aim_rank': 0, 'speed_rank': 0, 'throw_rank': 0, 'hands_rank': 0, 'total_rank': 0,
+        #    'aim_div_rank': 0, 'speed_div_rank': 0, 'throw_div_rank': 0, 'hands_div_rank': 0, 'total_div_rank': 0
+        #}]
+    #else:
     stats_for_week = get_player_ranks(teams,current_week)
     current_stats = [stat for stat in stats_for_week if stat['pid'] == pid]
-    
+     
 
 
     return render_template('player.html',

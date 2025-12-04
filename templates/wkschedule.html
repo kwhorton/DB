@@ -367,6 +367,7 @@
         <div class="week-selector">
             <label for="weekSelect">View Week:</label>
             <select id="weekSelect" onchange="changeWeek()">
+                <option value="0" {% if week == 0 %}selected{% endif %}>Preseason</option>
                 <option value="1" {% if week == 1 %}selected{% endif %}>Week 1</option>
                 <option value="1.5" {% if week == 1.5 %}selected{% endif %}>Week 1.5</option>
                 <option value="2" {% if week == 2 %}selected{% endif %}>Week 2</option>

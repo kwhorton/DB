@@ -189,10 +189,11 @@
         }
         
         .controls {
-            margin-top: 20px;
+            margin-bottom: 20px;
             display: flex;
             gap: 10px;
             align-items: center;
+            justify-content: center;
         }
         
         button {
@@ -273,7 +274,6 @@
         {% endif %}
     </div>
 
-    <h1>Dodgeball Game Animation</h1>
     
     <div class="match-header-info">
         <div class="team-names">{{ match_info.team1 }} vs {{ match_info.team2 }}</div>
@@ -288,7 +288,7 @@
                 <span class="score-separator">-</span>
                 <span class="team2-score">{{ match_info.game_scores[1] }}</span>
             </div>
-            <div class="game-label">Game {{ match_info.game_number }} </div>
+            <div class="game-label">Game {{ match_info.game_number }} of {{ match_info.total_games }}</div>
         </div>
         {% else %}
         <!-- Head-to-Head: Show set score and game score -->
@@ -315,7 +315,7 @@
         {% endif %}
     </div>
     
-    {% if match_info.game_number < match_info.total_games %}
+    <!-- Always show Next Game button -->
     <div class="game-navigation">
         {% if match_info.is_tournament %}
         <button class="nav-button next-game-btn" onclick="window.location.href='{{ url_for('animate_tournament_match', tournament_id=match_info.tournament, match_index=match_index, game_index=game_index+1) }}'">
@@ -327,12 +327,6 @@
         </button>
         {% endif %}
     </div>
-    {% else %}
-    <div class="match-complete">
-        <strong>Match Complete!</strong>
-    </div>
-    {% endif %}
-    <canvas id="gameCanvas" width="800" height="400"></canvas>
     
     <div class="controls">
         <button id="playBtn">Play</button>
@@ -344,6 +338,10 @@
             <span id="speedLabel">1x</span>
         </div>
     </div>
+
+    
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
+    
     
     <div class="info-panel">
         <div class="play-info" id="playInfo">Ready to start</div>
@@ -365,6 +363,11 @@
         
         // Player names lookup from Flask
         const playerNames = {{ player_names | tojson }};
+        
+        // Match info for detecting last game
+        const currentGameNumber = {{ match_info.game_number }};
+        const totalGames = {{ match_info.total_games }};
+        const isLastGame = (currentGameNumber === totalGames);
         
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
@@ -664,6 +667,18 @@
             document.getElementById('pauseBtn').disabled = true;
             if (animationFrame) {
                 cancelAnimationFrame(animationFrame);
+            }
+            
+            // Check if animation completed on last game
+            if (currentPlay >= gameLog.length - 1 && isLastGame) {
+                // Show match complete message
+                const nextGameBtn = document.querySelector('.next-game-btn');
+                if (nextGameBtn) {
+                    nextGameBtn.textContent = 'Match Complete! ✓';
+                    nextGameBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                    nextGameBtn.style.cursor = 'default';
+                    nextGameBtn.onclick = null;
+                }
             }
         }
         

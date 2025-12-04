@@ -5,8 +5,12 @@ from show_results import *
 def standings(teams,schedule,all_tourneys,week):
 
     standings = []
-    end = (week>=3)*(week+1) + (week<3)*(2*week-2) + 1
-    end = int(end)
+    # For week 0 (preseason), show no results (end=0)
+    if week == 0:
+        end = 0
+    else:
+        end = (week>=3)*(week+1) + (week<3)*(2*week-2) + 1
+        end = int(end)
     for team in teams:
 
         output = {'Team': team.team_name,
@@ -32,8 +36,12 @@ def standings(teams,schedule,all_tourneys,week):
 def get_standings_by_division(teams, schedule, all_tourneys, week):
     """Generate standings organized by division"""
     standings = []
-    end = (week >= 3) * (week + 1) + (week < 3) * (2 * week - 2) + 1
-    end = int(end)
+    # For week 0 (preseason), show no results
+    if week == 0:
+        end = 0
+    else:
+        end = (week >= 3) * (week + 1) + (week < 3) * (2 * week - 2) + 1
+        end = int(end)
     for team in teams:
         output = {
             'team_name': team.team_name,
@@ -64,8 +72,12 @@ def get_playoff_standings(teams, schedule, all_tourneys, current_week):
     """Calculate playoff standings with division leaders and wildcards"""
     # Calculate the end index based on current week
     display_week = current_week
-    end = (display_week>=3)*(display_week+1) + (display_week<3)*(2*display_week-2) + 1
-    end = int(end)
+    # For week 0 (preseason), show no results
+    if display_week == 0:
+        end = 0
+    else:
+        end = (display_week>=3)*(display_week+1) + (display_week<3)*(2*display_week-2) + 1
+        end = int(end)
     
     # Get division leaders
     divisions = {}
@@ -141,7 +153,7 @@ def get_player_ranks(teams,week):
     stats_for_week = []
     for team in teams:
         for player in team.players:
-            week_stats = [stat for stat in player.all_stats if stat['Week']==week]
+            week_stats = [stat for stat in player.all_stats if stat['Week']==max(1,week)]
             week_stats = week_stats[0]
             player_info = {
                 'pid': player.pid,

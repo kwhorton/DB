@@ -2,8 +2,12 @@ import pandas as pd
 
 def results(team_name,teams,schedule,all_tourneys,week):
     team_results = []
-    end = (week>=3)*(week+1) + (week<3)*(2*week-2) + 1
-    end = int(end)
+    # For week 0 (preseason), show no results
+    if week == 0:
+        end = 0
+    else:
+        end = (week>=3)*(week+1) + (week<3)*(2*week-2) + 1
+        end = int(end)
     tourney_types = ['Random','Random','Division','Division','Score','Random',
                  'Division','Division','Score','Random','Random','Score','Division',
                  'Division']
@@ -52,7 +56,7 @@ def get_week_rating(team,week):
                  'Hands':0}
     
     for player in team.players:
-        player_week = [stats for stats in player.all_stats if stats['Week']==week]
+        player_week = [stats for stats in player.all_stats if stats['Week'] == max(1,week)]
         player_week = player_week[0]
         team_stats['Aim']+=player_week['Aim']
         team_stats['Speed']+=player_week['Speed']

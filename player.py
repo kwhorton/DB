@@ -22,8 +22,11 @@ class Player:
         return average_score
 
     def get_average_score_week(self,week):
-        x = [(stats['Aim'],stats['Speed'],stats['Throw'],stats['Hands']) for stats in self.all_stats if stats['Week']==week]
-        average_score = 0.25*sum(x[0])
+        if week > 0:
+            x = [(stats['Aim'],stats['Speed'],stats['Throw'],stats['Hands']) for stats in self.all_stats if stats['Week']==week]
+            average_score = 0.25*sum(x[0])
+        elif week == 0:
+            average_score = 0.25*(self.aim + self.speed + self.throw + self.hands)
         return average_score
 
 
