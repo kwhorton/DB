@@ -158,17 +158,27 @@
 
         {% block content %}
         <div class="back-button">
-            <a href="/">← Back to Home</a>
+            <a href="/">â† Back to Home</a>
         </div>
 
         <div class="team-header">
             <h1>{{ team.team_name }}</h1>
+            {% if is_preview %}
+                <div style="margin-top: 10px; color: #f39c12; font-size: 16px; font-weight: bold;">
+                    🔮 Season Preview Mode
+                </div>
+            {% endif %}
         </div>
 
         <div class="content-grid">
             <!-- Roster Section -->
             <div class="roster-section">
-                <div class="section-title">Roster ({{ players|length }} Players)</div>
+                <div class="section-title">
+                    Roster ({{ players|length }} Players)
+                    {% if is_preview %}
+                        <span style="color: #f39c12; font-size: 14px; margin-left: 10px;">(Initial Ratings)</span>
+                    {% endif %}
+                </div>
                 {% if players %}
                 <style>
                     .player-table {
@@ -243,7 +253,7 @@
                     </thead>
                     <tbody>
                         {% for player in players %}
-                        <tr onclick="window.location.href='/player/{{ player.pid }}'">
+                        <tr {% if not is_preview %}onclick="window.location.href='/player/{{ player.pid }}'"{% endif %}{% if is_preview %}style="cursor: default;"{% endif %}>
                             <td class = "player-name-cell">{{ player.name|short_name }}</td>
                             <td class="stat-cell">
                                 <div class="avg-stat">{{ "%.2f"|format(player.avg_stats) }}</div>
@@ -259,10 +269,15 @@
                 {% endif %}
             </div>
 
-            <!-- Results Section -->
+            <!-- Results/Schedule Section -->
             <div class="results-section">
-                <div class="section-title">Team Results</div>
-                {{ results_html|safe }}
+                {% if is_preview %}
+                    <div class="section-title">Season Schedule Preview</div>
+                    {{ schedule_html|safe }}
+                {% else %}
+                    <div class="section-title">Team Results</div>
+                    {{ results_html|safe }}
+                {% endif %}
             </div>
         </div>
     </div>
