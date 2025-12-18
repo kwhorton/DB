@@ -27,12 +27,13 @@
         }
 
         .header-content {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             display: flex;
             justify-content: space-between;
             align-items: center;
             gap: 20px;
+            flex-wrap: wrap;
         }
 
         .app-title {
@@ -63,7 +64,13 @@
             opacity: 0.8;
         }
 
-        .current-week-selector {
+        .controls-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .tier-selector, .current-week-selector {
             display: flex;
             align-items: center;
             gap: 10px;
@@ -72,12 +79,12 @@
             border-radius: 5px;
         }
 
-        .current-week-selector label {
+        .tier-selector label, .current-week-selector label {
             font-weight: bold;
             white-space: nowrap;
         }
 
-        .current-week-selector select {
+        .tier-selector select, .current-week-selector select {
             padding: 6px 10px;
             border: none;
             border-radius: 4px;
@@ -88,7 +95,7 @@
             min-width: 80px;
         }
 
-        .current-week-selector select:focus {
+        .tier-selector select:focus, .current-week-selector select:focus {
             outline: none;
             box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
         }
@@ -98,13 +105,30 @@
         }
 
         .page-content-inner {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .controls-group {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .tier-selector, .current-week-selector {
+                width: 100%;
+                justify-content: space-between;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Global Header with Week Selector -->
+    <!-- Global Header with Tier and Week Selector -->
     <div class="global-header">
         <div class="header-content">
             <div class="app-title" onclick="window.location.href='/'">League Management</div>
@@ -114,30 +138,39 @@
                 <a href="/schedule">Schedule</a>
             </nav>
 
-            <div class="current-week-selector">
-                <label for="globalWeekSelect">Current Week:</label>
-                <select id="globalWeekSelect" onchange="changeGlobalWeek()">
-                    <option value="0" {% if current_week == 0 %}selected{% endif %}>(Preview)</option>
-                    <option value="1" {% if current_week == 1 %}selected{% endif %}>Week 1</option>
-                    <option value="1.5" {% if current_week == 1.5 %}selected{% endif %}>Week 1.5</option>
-                    <option value="2" {% if current_week == 2 %}selected{% endif %}>Week 2</option>
-                    <option value="2.5" {% if current_week == 2.5 %}selected{% endif %}>Week 2.5</option>
-                    <option value="3" {% if current_week == 3 %}selected{% endif %}>Week 3</option>
-                    <option value="4" {% if current_week == 4 %}selected{% endif %}>Week 4</option>
-                    <option value="5" {% if current_week == 5 %}selected{% endif %}>Week 5</option>
-                    <option value="6" {% if current_week == 6 %}selected{% endif %}>Week 6</option>
-                    <option value="7" {% if current_week == 7 %}selected{% endif %}>Week 7</option>
-                    <option value="8" {% if current_week == 8 %}selected{% endif %}>Week 8</option>
-                    <option value="9" {% if current_week == 9 %}selected{% endif %}>Week 9</option>
-                    <option value="10" {% if current_week == 10 %}selected{% endif %}>Week 10</option>
-                    <option value="11" {% if current_week == 11 %}selected{% endif %}>Week 11</option>
-                    <option value="12" {% if current_week == 12 %}selected{% endif %}>Week 12</option>
-                    <option value="13" {% if current_week == 13 %}selected{% endif %}>Week 13</option>
-                    <option value="14" {% if current_week == 14 %}selected{% endif %}>Week 14</option>
-                    <option value="15" {% if current_week == 15 %}selected{% endif %}>Week 15</option>
-                    <option value="16" {% if current_week == 16 %}selected{% endif %}>Week 16</option>
-                    <!-- Add more weeks as needed -->
-                </select>
+            <div class="controls-group">
+                <div class="tier-selector">
+                    <label for="globalTierSelect">Tier:</label>
+                    <select id="globalTierSelect" onchange="changeTier()">
+                        {% for tier in available_tiers %}
+                        <option value="{{ tier }}" {% if current_tier == tier %}selected{% endif %}>{{ tier }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="current-week-selector">
+                    <label for="globalWeekSelect">Current Week:</label>
+                    <select id="globalWeekSelect" onchange="changeGlobalWeek()">
+                        <option value="1" {% if current_week == 1 %}selected{% endif %}>Week 1</option>
+                        <option value="1.5" {% if current_week == 1.5 %}selected{% endif %}>Week 1.5</option>
+                        <option value="2" {% if current_week == 2 %}selected{% endif %}>Week 2</option>
+                        <option value="2.5" {% if current_week == 2.5 %}selected{% endif %}>Week 2.5</option>
+                        <option value="3" {% if current_week == 3 %}selected{% endif %}>Week 3</option>
+                        <option value="4" {% if current_week == 4 %}selected{% endif %}>Week 4</option>
+                        <option value="5" {% if current_week == 5 %}selected{% endif %}>Week 5</option>
+                        <option value="6" {% if current_week == 6 %}selected{% endif %}>Week 6</option>
+                        <option value="7" {% if current_week == 7 %}selected{% endif %}>Week 7</option>
+                        <option value="8" {% if current_week == 8 %}selected{% endif %}>Week 8</option>
+                        <option value="9" {% if current_week == 9 %}selected{% endif %}>Week 9</option>
+                        <option value="10" {% if current_week == 10 %}selected{% endif %}>Week 10</option>
+                        <option value="11" {% if current_week == 11 %}selected{% endif %}>Week 11</option>
+                        <option value="12" {% if current_week == 12 %}selected{% endif %}>Week 12</option>
+                        <option value="13" {% if current_week == 13 %}selected{% endif %}>Week 13</option>
+                        <option value="14" {% if current_week == 14 %}selected{% endif %}>Week 14</option>
+                        <option value="15" {% if current_week == 15 %}selected{% endif %}>Week 15</option>
+                        <option value="16" {% if current_week == 16 %}selected{% endif %}>Week 16</option>
+                    </select>
+                </div>
             </div>
         </div>
     </div>
@@ -149,6 +182,14 @@
     </div>
 
     <script>
+        function changeTier() {
+            const tier = document.getElementById('globalTierSelect').value;
+            // Reload the current page with the new tier parameter
+            const url = new URL(window.location);
+            url.searchParams.set('set_tier', tier);
+            window.location.href = url.toString();
+        }
+
         function changeGlobalWeek() {
             const week = document.getElementById('globalWeekSelect').value;
             // Reload the current page with the new week parameter

@@ -115,24 +115,30 @@ def load_teams_and_players(roster_file='roster2033.csv', teams_file='allteams203
     
     return teams
 
+
+def load_all_tiers(roster_file='roster2033.csv', teams_file='allteams2033.csv', playerdb_file=None):
+    """
+    Load all 4 tiers of teams.
+    
+    Returns:
+    - Dictionary with tier names as keys and team lists as values
+    """
+    tiers = {}
+    for tier_num in range(1, 5):
+        tier_name = f"Tier {tier_num}"
+        print(f"Loading {tier_name}...")
+        tiers[tier_name] = load_teams_and_players(
+            roster_file=roster_file,
+            teams_file=teams_file,
+            tier=tier_name,
+            playerdb_file=playerdb_file
+        )
+        print(f"  Loaded {len(tiers[tier_name])} teams")
+    return tiers
+
+
+# Load only Tier 1 by default for backward compatibility
 teams = load_teams_and_players(playerdb_file = "player_db.pkl")
 
-
-##teams = []
-##divs = ['East', 'Midwest', 'South', 'West']
-##for d in range(4):
-##    for j in range(1,9):
-##        team_id = f"T{8*d+j:03}"
-##        team_mean = random.randint(300,400)
-##        players = []
-##        for i in range(1,9):
-##            player_id = f"P{8*(8*d+j-1)+i:03}"
-##            player_aim = random.randint(team_mean-20,team_mean+20)
-##            player_speed = random.randint(team_mean-20,team_mean+20)
-##            player_throw = random.randint(team_mean-20,team_mean+20)
-##            player_hands = random.randint(team_mean-20,team_mean+20)
-##            player = Player(player_id,player_aim,player_speed,player_throw,player_hands)
-##            players.append(player)
-##        team = Team(team_id,divs[d],players)
-##        team.get_team_rating()
-##        teams.append(team)
+# Load all tiers
+all_tiers = load_all_tiers(playerdb_file = "player_db.pkl")

@@ -8,14 +8,13 @@ from show_results import *
 from show_standings import *
 import os
 
-with open("season.pkl","rb") as f:
-    teams = pickle.load(f)
-    schedule = pickle.load(f)
-    all_tourneys = pickle.load(f)
+# Load all tiers data
+with open("season_all_tiers.pkl", "rb") as f:
+    all_tiers_data = pickle.load(f)
 
-for idx, tourney in enumerate(all_tourneys):
-    tourney.id = idx
-        
+# Available tiers
+AVAILABLE_TIERS = ['Tier 1', 'Tier 2', 'Tier 3', 'Tier 4']
+
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Set a proper secret key
 
@@ -37,26 +36,49 @@ app.jinja_env.filters['full_name'] = format_full_name
 app.jinja_env.filters['short_name'] = format_short_name
 
 @app.before_request
-def set_current_week():
-    # Get current week from session or default to 0
+def set_current_week_and_tier():
+    # Get current week from session or default to 1
     if 'current_week' not in session:
         session['current_week'] = 1
+    
+    # Get current tier from session or default to Tier 1
+    if 'current_tier' not in session:
+        session['current_tier'] = 'Tier 1'
     
     # Check if week is being changed
     if request.args.get('set_week'):
         session['current_week'] = float(request.args.get('set_week'))
     
-    # Make it available to all templates
+    # Check if tier is being changed
+    if request.args.get('set_tier'):
+        new_tier = request.args.get('set_tier')
+        if new_tier in AVAILABLE_TIERS:
+            session['current_tier'] = new_tier
+    
     return None
 
 @app.context_processor
-def inject_current_week():
-    return {'current_week': session.get('current_week', 0)}
+def inject_globals():
+    return {
+        'current_week': session.get('current_week', 1),
+        'current_tier': session.get('current_tier', 'Tier 1'),
+        'available_tiers': AVAILABLE_TIERS
+    }
+
+def get_current_tier_data():
+    """Helper function to get current tier's data"""
+    tier = session.get('current_tier', 'Tier 1')
+    return all_tiers_data[tier]
 
 @app.route("/")
-
 def index():
     current_week = session.get('current_week', 1)
+    tier_data = get_current_tier_data()
+    
+    teams = tier_data['teams']
+    schedule = tier_data['schedule']
+    all_tourneys = tier_data['all_tourneys']
+    
     standings_data = get_standings_by_division(teams, schedule, all_tourneys, current_week)
     playoff_standings = get_playoff_standings(teams, schedule, all_tourneys, current_week)
 
@@ -65,84 +87,61 @@ def index():
 @app.route('/team/<team_name>')
 def team_page(team_name):
     current_week = session.get('current_week', 1)
+    tier_data = get_current_tier_data()
+    
+    teams = tier_data['teams']
+    schedule = tier_data['schedule']
+    all_tourneys = tier_data['all_tourneys']
 
     # Get the team object
     team = [team for team in teams if team.team_name == team_name][0]
     
-    # Check if Week 0 (preview mode)
-    is_preview = (current_week == 0)
+    # Get results HTML using your existing function
+    results_html = results(team_name, teams, schedule, all_tourneys, current_week)
     
-    if is_preview:
-    # Week 0: Show season schedule preview
-        from show_results import get_season_schedule
-        schedule_html = get_season_schedule(team_name, teams, schedule, all_tourneys)
-        results_html = None
+    # Get player roster
+    players = []
+    for player in team.players:
         
-        # Get player roster with initial attributes
-        players = []
-        for player in team.players:
-            # Use initial attributes (from first week's stats or base attributes)
-            stats = [player.aim, player.speed, player.throw, player.hands]
-            avg_stats = sum(stats)/len(stats)
-            
-            players.append({
-                'pid': player.pid,
-                'name': player.name,
-                'avg_stats': avg_stats,
-                'aim': stats[0],
-                'speed': stats[1],
-                'throw': stats[2],
-                'hands': stats[3],
-                'games_played': 0
-            })
-    else:
-        # Regular mode: Show results
-        results_html = results(team_name, teams, schedule, all_tourneys, current_week)
-        schedule_html = None
-        
-        # Get player roster with current stats
-        players = []
-        for player in team.players:
-            gp_total = 0
-            for stat in player.all_stats:
-                if stat['Week'] <= current_week:
-                    gp_total += stat['GP']
+        gp_total = 0
+        for stat in player.all_stats:
+            if stat['Week'] <= current_week:
+                gp_total += stat['GP']
 
-                if stat['Week'] == current_week:
-                    stats = [stat['Aim'],stat['Speed'],stat['Throw'],stat['Hands']]
-            avg_stats = sum(stats)/len(stats)
-                    
-            players.append({
-                'pid': player.pid,
-                'name': player.name,
-                'avg_stats': avg_stats,
-                'aim': stats[0],
-                'speed': stats[1],
-                'throw': stats[2],
-                'hands': stats[3],
-                'games_played': gp_total
+            if stat['Week'] == current_week:
+                stats = [stat['Aim'],stat['Speed'],stat['Throw'],stat['Hands']]
+        avg_stats = sum(stats)/len(stats)
+
+                
+        players.append({
+            'pid': player.pid,
+            'name': player.name,
+            'avg_stats': avg_stats,
+            'aim': stats[0],
+            'speed': stats[1],
+            'throw': stats[2],
+            'hands': stats[3],
+            'games_played': gp_total
             })
     
     return render_template('team.html',
                          team=team,
                          players=players,
-                         results_html=results_html,
-                         schedule_html=schedule_html,
-                         is_preview=is_preview)
-
-
+                         results_html=results_html)
 
 @app.route("/schedule")
 @app.route("/schedule/<week>")
-
-#def wkschedule():
 def wkschedule(week = None):
-
     current_week = session.get('current_week', 16)  # "Today's date"
+    tier_data = get_current_tier_data()
+    
+    teams = tier_data['teams']
+    schedule = tier_data['schedule']
+    all_tourneys = tier_data['all_tourneys']
+    
     if week is None:
         week= 1
 
-    #selected_week = request.args.get('week', default = 1., type = float)
     week_num = float(week)
 
     # Determine if results should be shown
@@ -156,7 +155,6 @@ def wkschedule(week = None):
     end = (display_week>=3)*(display_week+1) + (display_week<3)*(2*display_week-2) 
     end = int(end)
 
-    #if selected_week in [1, 1.5, 2, 2.5]:
     if week_num in [1, 1.5, 2, 2.5]:
         filtered_schedule = [match for match in schedule if match.week==week_num]
 
@@ -237,15 +235,17 @@ def wkschedule(week = None):
                     'teams_info': teams_info
                 }
                 tournaments.append(tourney_info)
-        #tourney_show = (tourney.type != 'Score')
                 
         return render_template('wkschedule.html', week= week_num, is_tournament = True, tournaments = tournaments, show_results = show_results, tourney_show = tourney_show)
 
 
 @app.route('/tournament/<int:tournament_id>')
 def view_tournament(tournament_id):
-
+    tier_data = get_current_tier_data()
+    all_tourneys = tier_data['all_tourneys']
+    
     tourney = all_tourneys[tournament_id]
+    
     # Prepare tournament data
     teams_info = {}
     i = 1
@@ -286,6 +286,8 @@ def view_tournament(tournament_id):
 @app.route('/player/<pid>')
 def player_page(pid):
     current_week = session.get('current_week', 16)
+    tier_data = get_current_tier_data()
+    teams = tier_data['teams']
     
     # Find the player
     player = None
@@ -303,12 +305,6 @@ def player_page(pid):
     if not player:
         return "Player not found", 404
     
-
-    
-    # Get the most recent stats up to current_week
-
-        
-    
     # Get all stats up to current_week
     stats_history = []
     for stat in player.all_stats:
@@ -324,20 +320,11 @@ def player_page(pid):
                 'hit': stat['Hit'],
                 'blocks': stat['Blocks'],
                 'catches': stat['Catches']
-#                'aim': stat['Aim'],
- #               'speed': stat['Speed'],
-  #              'throw': stat['Throw'],
-   #             'hands': stat['Hands'],
-                
-    #            'avg': (stat['Aim'] + stat['Speed'] + stat['Throw'] + stat['Hands']) / 4
             })
-
 
     stats_for_week = get_player_ranks(teams,current_week)
     current_stats = [stat for stat in stats_for_week if stat['pid'] == pid]
-     
-
-
+    
     return render_template('player.html',
                          player=player,
                          team=player_team,
@@ -345,12 +332,13 @@ def player_page(pid):
                          stats_history=stats_history)
 
 
-
-
 @app.route('/animate/match/<int:match_index>')
 @app.route('/animate/match/<int:match_index>/game/<int:game_index>')
 def animate_match(match_index, game_index=None):
     """Animate a regular season match - shows all games in sequence"""
+    tier_data = get_current_tier_data()
+    schedule = tier_data['schedule']
+    
     if match_index >= len(schedule):
         return "Match not found", 404
     
@@ -381,7 +369,6 @@ def animate_match(match_index, game_index=None):
             player_names[player.pid] = player.name
     
     # Calculate which set we're in by counting games
-    # Each set has sum of set_results[i] games
     current_set = 0
     games_counted = 0
     game_in_set = 0
@@ -389,7 +376,6 @@ def animate_match(match_index, game_index=None):
     for set_idx, set_result in enumerate(match.set_results):
         games_in_this_set = set_result[0] + set_result[1]
         if games_counted + games_in_this_set > game_index:
-            # Current game is in this set
             current_set = set_idx
             game_in_set = game_index - games_counted + 1
             break
@@ -440,6 +426,9 @@ def animate_match(match_index, game_index=None):
 @app.route('/animate/tournament/<int:tournament_id>/<int:match_index>/game/<int:game_index>')
 def animate_tournament_match(tournament_id, match_index, game_index=None):
     """Animate a tournament match - shows all games in sequence"""
+    tier_data = get_current_tier_data()
+    all_tourneys = tier_data['all_tourneys']
+    
     if tournament_id >= len(all_tourneys):
         return "Tournament not found", 404
     
@@ -478,7 +467,7 @@ def animate_tournament_match(tournament_id, match_index, game_index=None):
     
     # Calculate current game scores BEFORE this game (not including current game)
     current_game_scores = [0, 0]
-    for i in range(game_index):  # Changed: was game_index + 1
+    for i in range(game_index):
         if i < len(match.games):
             winner = match.games[i].winner
             if winner == 1:
@@ -504,11 +493,6 @@ def animate_tournament_match(tournament_id, match_index, game_index=None):
                          match_index=match_index,
                          game_index=game_index,
                          player_names=player_names)
-
-
-
-
-
 
 
 if __name__ == "__main__":
