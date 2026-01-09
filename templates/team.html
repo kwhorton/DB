@@ -48,6 +48,17 @@
             color: #333;
         }
 
+        .preseason-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
         .content-grid {
             display: grid;
             grid-template-columns: 1fr 2fr;
@@ -61,7 +72,7 @@
             }
         }
 
-        .roster-section, .results-section {
+        .roster-section, .results-section, .schedule-section {
             background: white;
             padding: 25px;
             border-radius: 8px;
@@ -77,41 +88,66 @@
             border-bottom: 3px solid #667eea;
         }
 
-        .player-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
+        .player-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
         }
 
-        .player-item {
-            padding: 12px 15px;
+        .player-table th {
+            background: #f8f9fa;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+            color: #555;
+            border-bottom: 2px solid #ddd;
+            font-size: 13px;
+        }
+
+        .player-table td {
+            padding: 12px;
             border-bottom: 1px solid #eee;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: background 0.2s;
-            cursor: pointer;
+            font-size: 14px;
         }
 
-        .player-item:hover {
+        .player-table tr:hover {
             background: #f8f9fa;
         }
 
-        .player-item:last-child {
+        .player-table tbody tr:last-child td {
             border-bottom: none;
         }
 
-        .player-name {
+        .player-name-cell {
             font-weight: 500;
             color: #333;
+            cursor: pointer;
+            transition: color 0.2s;
+            text-transform: none;
         }
 
-        .player-id {
+        .player-name-cell:hover {
+            color: #667eea;
+        }
+
+        .stat-cell {
+            text-align: center;
+            color: #666;
+        }
+
+        .avg-stat {
+            font-weight: bold;
+            background: #f0f0f0;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            min-width: 45px;
+        }
+
+        .stat-breakdown {
             font-size: 12px;
             color: #999;
-            background: #f0f0f0;
-            padding: 3px 8px;
-            border-radius: 3px;
+            margin-top: 4px;
         }
 
         .no-data {
@@ -121,7 +157,88 @@
             font-style: italic;
         }
 
-        /* Style the pandas DataFrame table */
+        /* Schedule table styles */
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .schedule-table th {
+            background: #f8f9fa;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+            color: #555;
+            border-bottom: 2px solid #ddd;
+            font-size: 13px;
+        }
+
+        .schedule-table td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+
+        .schedule-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .schedule-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .week-cell {
+            font-weight: bold;
+            color: #667eea;
+            min-width: 80px;
+        }
+
+        .type-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .type-h2h {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .type-tournament {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .tournament-type {
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        .home-away {
+            display: inline-block;
+            padding: 2px 6px;
+            background: #f0f0f0;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+
+        .home-away.home {
+            background: #c8e6c9;
+            color: #2e7d32;
+        }
+
+        .home-away.away {
+            background: #ffcdd2;
+            color: #c62828;
+        }
+
+        /* Results section styles */
         .results-section table {
             width: 100%;
             border-collapse: collapse;
@@ -158,108 +275,42 @@
 
         {% block content %}
         <div class="back-button">
-            <a href="/">â† Back to Home</a>
+            <a href="/">← Back to Home</a>
         </div>
 
         <div class="team-header">
             <h1>{{ team.team_name }}</h1>
-            {% if is_preview %}
-                <div style="margin-top: 10px; color: #f39c12; font-size: 16px; font-weight: bold;">
-                    🔮 Season Preview Mode
-                </div>
+            {% if is_preseason %}
+            <div class="preseason-badge">🔮 Season Preview</div>
             {% endif %}
         </div>
 
         <div class="content-grid">
             <!-- Roster Section -->
             <div class="roster-section">
-                <div class="section-title">
-                    Roster ({{ players|length }} Players)
-                    {% if is_preview %}
-                        <span style="color: #f39c12; font-size: 14px; margin-left: 10px;">(Initial Ratings)</span>
-                    {% endif %}
-                </div>
+                <div class="section-title">Roster ({{ players|length }} Players)</div>
                 {% if players %}
-                <style>
-                    .player-table {
-                        width: 100%;
-                        border-collapse: collapse;
-                        margin-top: 15px;
-                    }
-
-                    .player-table th {
-                        background: #f8f9fa;
-                        padding: 12px;
-                        text-align: left;
-                        font-weight: bold;
-                        color: #555;
-                        border-bottom: 2px solid #ddd;
-                        font-size: 13px;
-                    }
-
-                    .player-table td {
-                        padding: 12px;
-                        border-bottom: 1px solid #eee;
-                        font-size: 14px;
-                    }
-
-                    .player-table tr:hover {
-                        background: #f8f9fa;
-                    }
-
-                    .player-table tbody tr:last-child td {
-                        border-bottom: none;
-                    }
-
-                    .player-name-cell {
-                        font-weight: 500;
-                        color: #333;
-                        cursor: pointer;
-                        transition: color 0.2s;
-                        text-transform: none;
-                    }
-
-                    .player-name-cell:hover {
-                        color: #667eea;
-                    }
-
-                    .stat-cell {
-                        text-align: center;
-                        color: #666;
-                    }
-
-                    .avg-stat {
-                        font-weight: bold;
-                        background: #f0f0f0;
-                        padding: 4px 8px;
-                        border-radius: 4px;
-                        display: inline-block;
-                        min-width: 45px;
-                    }
-
-                    .stat-breakdown {
-                        font-size: 12px;
-                        color: #999;
-                        margin-top: 4px;
-                    }
-                </style>
                 <table class="player-table">
                     <thead>
                         <tr>
                             <th>Player</th>
                             <th>Avg Rating</th>
+                            {% if not is_preseason %}
                             <th>Games Played</th>
+                            {% endif %}
                         </tr>
                     </thead>
                     <tbody>
                         {% for player in players %}
-                        <tr {% if not is_preview %}onclick="window.location.href='/player/{{ player.pid }}'"{% endif %}{% if is_preview %}style="cursor: default;"{% endif %}>
-                            <td class = "player-name-cell">{{ player.name|short_name }}</td>
+                        <tr onclick="window.location.href='/player/{{ player.pid }}'">
+                            <td class="player-name-cell">{{ player.name|short_name }}</td>
                             <td class="stat-cell">
                                 <div class="avg-stat">{{ "%.2f"|format(player.avg_stats) }}</div>
                                 <div class="stat-breakdown">(A:{{ "%.1f"|format(player.aim) }} S:{{ "%.1f"|format(player.speed) }} T:{{ "%.1f"|format(player.throw) }} H:{{ "%.1f"|format(player.hands) }})</div>
                             </td>
+                            {% if not is_preseason %}
                             <td class="stat-cell"><strong>{{ player.games_played }}</strong></td>
+                            {% endif %}
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -269,16 +320,59 @@
                 {% endif %}
             </div>
 
-            <!-- Results/Schedule Section -->
-            <div class="results-section">
-                {% if is_preview %}
-                    <div class="section-title">Season Schedule Preview</div>
-                    {{ schedule_html|safe }}
-                {% else %}
-                    <div class="section-title">Team Results</div>
-                    {{ results_html|safe }}
-                {% endif %}
+            <!-- Results or Schedule Section -->
+            {% if is_preseason %}
+            <!-- Preseason: Show Schedule Preview -->
+            <div class="schedule-section">
+                <div class="section-title">📅 Season Schedule</div>
+                <table class="schedule-table">
+                    <thead>
+                        <tr>
+                            <th>Week</th>
+                            <th>Type</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for event in team_schedule %}
+                        <tr>
+                            <td class="week-cell">
+                                {% if event.week == 1 or event.week == 2 %}
+                                Week {{ event.week|int }}
+                                {% else %}
+                                Week {{ event.week }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if event.type == 'H2H' %}
+                                <span class="type-badge type-h2h">Head-to-Head</span>
+                                {% else %}
+                                <span class="type-badge type-tournament">Tournament</span>
+                                <div class="tournament-type">{{ event.tournament_type }}</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if event.type == 'H2H' %}
+                                <span class="home-away {% if event.home_away == 'vs' %}home{% else %}away{% endif %}">
+                                    {{ event.home_away }}
+                                </span>
+                                <strong>{{ event.opponent }}</strong>
+                                {% else %}
+                                8-team bracket
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
+            {% else %}
+            <!-- Regular Season: Show Results -->
+            <div class="results-section">
+                <div class="section-title">Team Results</div>
+                {{ results_html|safe }}
+            </div>
+            {% endif %}
         </div>
     </div>
     {% endblock %}

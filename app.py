@@ -96,38 +96,98 @@ def team_page(team_name):
     # Get the team object
     team = [team for team in teams if team.team_name == team_name][0]
     
-    # Get results HTML using your existing function
-    results_html = results(team_name, teams, schedule, all_tourneys, current_week)
-    
-    # Get player roster
-    players = []
-    for player in team.players:
-        
-        gp_total = 0
-        for stat in player.all_stats:
-            if stat['Week'] <= current_week:
-                gp_total += stat['GP']
-
-            if stat['Week'] == current_week:
-                stats = [stat['Aim'],stat['Speed'],stat['Throw'],stat['Hands']]
-        avg_stats = sum(stats)/len(stats)
-
-                
-        players.append({
-            'pid': player.pid,
-            'name': player.name,
-            'avg_stats': avg_stats,
-            'aim': stats[0],
-            'speed': stats[1],
-            'throw': stats[2],
-            'hands': stats[3],
-            'games_played': gp_total
+    # Check if we're in preseason (Week 0)
+    if current_week == 0:
+        # Preseason mode - show preview
+        players = []
+        for player in team.players:
+            # Use initial stats (aimmax, speedmax, etc.)
+            players.append({
+                'pid': player.pid,
+                'name': player.name,
+                'avg_stats': (player.aimmax + player.speedmax + player.throwmax + player.handsmax) / 4,
+                'aim': player.aimmax,
+                'speed': player.speedmax,
+                'throw': player.throwmax,
+                'hands': player.handsmax,
+                'games_played': 0
             })
+        
+        # Get schedule preview for this team
+        team_schedule = []
+        
+        # Get H2H matches (weeks 1, 1.5, 2, 2.5)
+        h2h_weeks = [1, 1.5, 2, 2.5]
+        for week in h2h_weeks:
+            week_matches = [m for m in schedule if m.week == week and 
+                          (m.team1.team_name == team_name or m.team2.team_name == team_name)]
+            if week_matches:
+                match = week_matches[0]
+                opponent = match.team2.team_name if match.team1.team_name == team_name else match.team1.team_name
+                home_away = "vs" if match.team1.team_name == team_name else "@"
+                team_schedule.append({
+                    'week': week,
+                    'type': 'H2H',
+                    'opponent': opponent,
+                    'home_away': home_away
+                })
+        
+        # Get tournament schedule (weeks 3-16)
+        tourney_types = ['Random','Random','Division','Division','Score','Random',
+                        'Division','Division','Score','Random','Random','Score','Division','Division']
+        
+        for week_idx, tourney_type in enumerate(tourney_types):
+            week = week_idx + 3
+            team_schedule.append({
+                'week': week,
+                'type': 'Tournament',
+                'tournament_type': tourney_type,
+                'opponent': None,
+                'home_away': None
+            })
+        
+        return render_template('team.html',
+                             team=team,
+                             players=players,
+                             results_html=None,
+                             is_preseason=True,
+                             team_schedule=team_schedule)
     
-    return render_template('team.html',
-                         team=team,
-                         players=players,
-                         results_html=results_html)
+    else:
+        # Regular season mode - show results and current stats
+        results_html = results(team_name, teams, schedule, all_tourneys, current_week)
+        
+        # Get player roster
+        players = []
+        for player in team.players:
+            
+            gp_total = 0
+            for stat in player.all_stats:
+                if stat['Week'] <= current_week:
+                    gp_total += stat['GP']
+
+                if stat['Week'] == current_week:
+                    stats = [stat['Aim'],stat['Speed'],stat['Throw'],stat['Hands']]
+            avg_stats = sum(stats)/len(stats)
+
+                    
+            players.append({
+                'pid': player.pid,
+                'name': player.name,
+                'avg_stats': avg_stats,
+                'aim': stats[0],
+                'speed': stats[1],
+                'throw': stats[2],
+                'hands': stats[3],
+                'games_played': gp_total
+                })
+        
+        return render_template('team.html',
+                             team=team,
+                             players=players,
+                             results_html=results_html,
+                             is_preseason=False,
+                             team_schedule=None)
 
 @app.route("/schedule")
 @app.route("/schedule/<week>")
@@ -422,77 +482,6 @@ def animate_match(match_index, game_index=None):
                          player_names=player_names)
 
 
-@app.route('/animate/tournament/<int:tournament_id>/<int:match_index>')
-@app.route('/animate/tournament/<int:tournament_id>/<int:match_index>/game/<int:game_index>')
-def animate_tournament_match(tournament_id, match_index, game_index=None):
-    """Animate a tournament match - shows all games in sequence"""
-    tier_data = get_current_tier_data()
-    all_tourneys = tier_data['all_tourneys']
-    
-    if tournament_id >= len(all_tourneys):
-        return "Tournament not found", 404
-    
-    tourney = all_tourneys[tournament_id]
-    
-    if match_index >= len(tourney.matches):
-        return "Match not found", 404
-    
-    match = tourney.matches[match_index]
-    if not match:
-        return "Match not played", 404
-    
-    # Default to first game if not specified
-    if game_index is None:
-        game_index = 0
-    
-    # Get specific game
-    if not hasattr(match, 'games') or game_index >= len(match.games):
-        return "Game not found", 404
-    
-    game = match.games[game_index]
-    
-    # Get game log (attribute is 'log' not 'game_log')
-    game_log = []
-    if hasattr(game, 'log') and game.log:
-        game_log = game.log
-    
-    # Create player name lookup from both teams
-    player_names = {}
-    for player in match.team1.players:
-        if hasattr(player, 'name') and player.name:
-            player_names[player.pid] = player.name
-    for player in match.team2.players:
-        if hasattr(player, 'name') and player.name:
-            player_names[player.pid] = player.name
-    
-    # Calculate current game scores BEFORE this game (not including current game)
-    current_game_scores = [0, 0]
-    for i in range(game_index):
-        if i < len(match.games):
-            winner = match.games[i].winner
-            if winner == 1:
-                current_game_scores[0] += 1
-            elif winner == 2:
-                current_game_scores[1] += 1
-    
-    match_info = {
-        'team1': match.team1.team_name,
-        'team2': match.team2.team_name,
-        'week': tourney.week,
-        'tournament': tournament_id,
-        'game_number': game_index + 1,
-        'total_games': len(match.games),
-        'game_scores': current_game_scores,
-        'is_tournament': True
-    }
-    
-    return render_template('dodgeball_animation.html', 
-                         game_log=game_log,
-                         match_info=match_info,
-                         tournament_id=tournament_id,
-                         match_index=match_index,
-                         game_index=game_index,
-                         player_names=player_names)
 
 
 if __name__ == "__main__":

@@ -40,8 +40,8 @@ def build_h2h_schedule(teams, year):
     div_order = [7,1,5,3]
     for i in range(4):
         matches.append(Match(e_teams_sorted[div_order[i]],e_teams_sorted[7-div_order[i]],"H",year, 2.5))
-        matches.append(Match(m_teams_sorted[div_order[i]],m_teams_sorted[7-div_order[i]],"H",year, 2.5))
+        matches.append(Match(m_teams_sorted[7-div_order[i]],m_teams_sorted[div_order[i]],"H",year, 2.5))
         matches.append(Match(s_teams_sorted[div_order[i]],s_teams_sorted[7-div_order[i]],"H",year, 2.5))
-        matches.append(Match(w_teams_sorted[div_order[i]],w_teams_sorted[7-div_order[i]],"H",year, 2.5))
+        matches.append(Match(w_teams_sorted[7-div_order[i]],w_teams_sorted[div_order[i]],"H",year, 2.5))
 
     return matches

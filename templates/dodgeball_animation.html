@@ -51,6 +51,78 @@
             box-shadow: 0 4px 8px rgba(46, 204, 113, 0.4);
         }
         
+        .game-area {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            margin-top: 20px;
+        }
+        
+        .stats-panel {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            min-width: 200px;
+            max-width: 250px;
+        }
+        
+        .stats-header {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #667eea;
+            text-align: center;
+        }
+        
+        .team1-stats .stats-header {
+            color: #3498db;
+            border-bottom-color: #3498db;
+        }
+        
+        .team2-stats .stats-header {
+            color: #e74c3c;
+            border-bottom-color: #e74c3c;
+        }
+        
+        .player-stat-row {
+            margin-bottom: 10px;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        
+        .player-stat-name {
+            font-weight: bold;
+            margin-bottom: 4px;
+            color: #333;
+        }
+        
+        .player-stat-values {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 4px;
+            font-size: 11px;
+            color: #666;
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .stat-label {
+            font-weight: 500;
+        }
+        
+        .stat-value {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        
         .match-header-info {
             background: white;
             padding: 25px;
@@ -268,9 +340,9 @@
 <body>
     <div class="back-button">
         {% if match_info.is_tournament %}
-        <a href="{{ url_for('view_tournament', tournament_id=match_info.tournament) }}">← Back to Tournament</a>
+        <a href="{{ url_for('view_tournament', tournament_id=match_info.tournament) }}">â† Back to Tournament</a>
         {% else %}
-        <a href="{{ url_for('wkschedule', week=match_info.week) }}">← Back to Week {{ match_info.week }}</a>
+        <a href="{{ url_for('wkschedule', week=match_info.week) }}">â† Back to Week {{ match_info.week }}</a>
         {% endif %}
     </div>
 
@@ -319,11 +391,11 @@
     <div class="game-navigation">
         {% if match_info.is_tournament %}
         <button class="nav-button next-game-btn" onclick="window.location.href='{{ url_for('animate_tournament_match', tournament_id=match_info.tournament, match_index=match_index, game_index=game_index+1) }}'">
-            Next Game →
+            Next Game â†’
         </button>
         {% else %}
         <button class="nav-button next-game-btn" onclick="window.location.href='{{ url_for('animate_match', match_index=match_index, game_index=game_index+1) }}'">
-            Next Game →
+            Next Game â†’
         </button>
         {% endif %}
     </div>
@@ -340,7 +412,24 @@
     </div>
 
     
-    <canvas id="gameCanvas" width="800" height="400"></canvas>
+    
+    <div class="game-area">
+        <!-- Team 1 Stats Panel -->
+        <div class="stats-panel team1-stats">
+            <div class="stats-header" id="team1StatsHeader">Team 1</div>
+            <div id="team1Stats"></div>
+        </div>
+        
+        <!-- Canvas -->
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+        
+        <!-- Team 2 Stats Panel -->
+        <div class="stats-panel team2-stats">
+            <div class="stats-header" id="team2StatsHeader">Team 2</div>
+            <div id="team2Stats"></div>
+        </div>
+    </div>
+    
     
     
     <div class="info-panel">
@@ -407,6 +496,125 @@
                 };
             });
         }
+        
+        // Player stats tracking
+        const playerStats = {};
+        
+        function initializeStats() {
+            // Initialize stats for all players
+            [...team1Players, ...team2Players].forEach(playerId => {
+                playerStats[playerId] = {
+                    hits: 0,
+                    misses: 0,
+                    blocks: 0,
+                    catches: 0
+                };
+            });
+            
+            // Set team headers
+            document.getElementById('team1StatsHeader').textContent = '{{ match_info.team1 }}';
+            document.getElementById('team2StatsHeader').textContent = '{{ match_info.team2 }}';
+            
+            updateStatsDisplay();
+        }
+        
+        function updateStatsFromLog() {
+            // Reset all stats
+            Object.keys(playerStats).forEach(playerId => {
+                playerStats[playerId] = { hits: 0, misses: 0, blocks: 0, catches: 0 };
+            });
+            
+            // Count stats from all plays up to current
+            for (let i = 1; i <= currentPlay && i < gameLog.length; i++) {
+                const play = gameLog[i];
+                if (!play.Thrower || !play.Target || !play.Result) continue;
+                
+                const result = play.Result;
+                const thrower = play.Thrower;
+                const target = play.Target;
+                
+                if (result === 'Hit') {
+                    if (playerStats[thrower]) playerStats[thrower].hits++;
+                } else if (result === 'Miss') {
+                    if (playerStats[thrower]) playerStats[thrower].misses++;
+                } else if (result === 'Block') {
+                    if (playerStats[target]) playerStats[target].blocks++;
+                } else if (result === 'Catch') {
+                    if (playerStats[target]) playerStats[target].catches++;
+                }
+            }
+        }
+        
+        function updateStatsDisplay() {
+            // Update Team 1 stats
+            let team1HTML = '';
+            team1Players.forEach(playerId => {
+                const stats = playerStats[playerId];
+                const playerName = playerNames[playerId] || playerId.substring(playerId.length - 4);
+                const shortName = playerName.includes(' ') ? playerName.split(' ')[1] : playerName;
+                const finalName = shortName.length > 10 ? shortName.substring(0, 8) : shortName;
+                
+                team1HTML += `
+                    <div class="player-stat-row">
+                        <div class="player-stat-name">${finalName}</div>
+                        <div class="player-stat-values">
+                            <div class="stat-item">
+                                <span class="stat-label">Hits:</span>
+                                <span class="stat-value">${stats.hits}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Misses:</span>
+                                <span class="stat-value">${stats.misses}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Blocks:</span>
+                                <span class="stat-value">${stats.blocks}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Catches:</span>
+                                <span class="stat-value">${stats.catches}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('team1Stats').innerHTML = team1HTML;
+            
+            // Update Team 2 stats
+            let team2HTML = '';
+            team2Players.forEach(playerId => {
+                const stats = playerStats[playerId];
+                const playerName = playerNames[playerId] || playerId.substring(playerId.length - 4);
+                const shortName = playerName.includes(' ') ? playerName.split(' ')[1] : playerName;
+                const finalName = shortName.length > 10 ? shortName.substring(0, 8) : shortName;
+                
+                team2HTML += `
+                    <div class="player-stat-row">
+                        <div class="player-stat-name">${finalName}</div>
+                        <div class="player-stat-values">
+                            <div class="stat-item">
+                                <span class="stat-label">Hits:</span>
+                                <span class="stat-value">${stats.hits}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Misses:</span>
+                                <span class="stat-value">${stats.misses}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Blocks:</span>
+                                <span class="stat-value">${stats.blocks}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Catches:</span>
+                                <span class="stat-value">${stats.catches}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('team2Stats').innerHTML = team2HTML;
+        }
+
         
         function drawCourt() {
             // Clear canvas
@@ -602,6 +810,9 @@
             
             // Update info panel with current play info (not affected by animation timing)
             updateInfoPanel();
+            // Update player stats
+            updateStatsFromLog();
+            updateStatsDisplay();
         }
         
         function animate() {
@@ -674,7 +885,7 @@
                 // Show match complete message
                 const nextGameBtn = document.querySelector('.next-game-btn');
                 if (nextGameBtn) {
-                    nextGameBtn.textContent = 'Match Complete! ✓';
+                    nextGameBtn.textContent = 'Match Complete! âœ“';
                     nextGameBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
                     nextGameBtn.style.cursor = 'default';
                     nextGameBtn.onclick = null;
@@ -701,6 +912,7 @@
         
         // Initialize
         initializePositions();
+        initializeStats();
         render();
     </script>
 </body>
