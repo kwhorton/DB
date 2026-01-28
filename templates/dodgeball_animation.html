@@ -340,9 +340,9 @@
 <body>
     <div class="back-button">
         {% if match_info.is_tournament %}
-        <a href="{{ url_for('view_tournament', tournament_id=match_info.tournament) }}">â† Back to Tournament</a>
+        <a href="{{ url_for('view_tournament', tournament_id=match_info.tournament) }}">Ã¢â€ Â Back to Tournament</a>
         {% else %}
-        <a href="{{ url_for('wkschedule', week=match_info.week) }}">â† Back to Week {{ match_info.week }}</a>
+        <a href="{{ url_for('wkschedule', week=match_info.week) }}">Ã¢â€ Â Back to Week {{ match_info.week }}</a>
         {% endif %}
     </div>
 
@@ -391,11 +391,11 @@
     <div class="game-navigation">
         {% if match_info.is_tournament %}
         <button class="nav-button next-game-btn" onclick="window.location.href='{{ url_for('animate_tournament_match', tournament_id=match_info.tournament, match_index=match_index, game_index=game_index+1) }}'">
-            Next Game â†’
+            Next Game Ã¢â€ â€™
         </button>
         {% else %}
         <button class="nav-button next-game-btn" onclick="window.location.href='{{ url_for('animate_match', match_index=match_index, game_index=game_index+1) }}'">
-            Next Game â†’
+            Next Game Ã¢â€ â€™
         </button>
         {% endif %}
     </div>
@@ -450,8 +450,15 @@
         // Game log from Flask
         const gameLog = {{ game_log | tojson }};
         
+        // All games logs (cumulative) from Flask
+        const allGamesLogs = {{ all_games_logs | tojson }};
+        
         // Player names lookup from Flask
         const playerNames = {{ player_names | tojson }};
+        
+        // Roster players from match_info
+        const team1Roster = {{ match_info.team1_roster | tojson }};
+        const team2Roster = {{ match_info.team2_roster | tojson }};
         
         // Match info for detecting last game
         const currentGameNumber = {{ match_info.game_number }};
@@ -468,7 +475,7 @@
         let playSpeed = 1;
         let throwAnimation = null;
         
-        // Determine teams from initial state
+        // Determine teams from initial state (for court positioning)
         const initialAlive = gameLog[0].Alive;
         const team1Players = initialAlive.slice(0, Math.floor(initialAlive.length / 2));
         const team2Players = initialAlive.slice(Math.floor(initialAlive.length / 2));
@@ -501,8 +508,17 @@
         const playerStats = {};
         
         function initializeStats() {
-            // Initialize stats for all players
-            [...team1Players, ...team2Players].forEach(playerId => {
+            // Initialize stats for ALL roster players (not just those playing in this game)
+            team1Roster.forEach(playerId => {
+                playerStats[playerId] = {
+                    hits: 0,
+                    misses: 0,
+                    blocks: 0,
+                    catches: 0
+                };
+            });
+            
+            team2Roster.forEach(playerId => {
                 playerStats[playerId] = {
                     hits: 0,
                     misses: 0,
@@ -524,7 +540,28 @@
                 playerStats[playerId] = { hits: 0, misses: 0, blocks: 0, catches: 0 };
             });
             
-            // Count stats from all plays up to current
+            // Count stats from ALL previous games AND current game up to current play
+            // Use allGamesLogs which contains all games up to and including current game
+            for (let i = 1; i < allGamesLogs.length; i++) {
+                const play = allGamesLogs[i];
+                if (!play.Thrower || !play.Target || !play.Result) continue;
+                
+                const result = play.Result;
+                const thrower = play.Thrower;
+                const target = play.Target;
+                
+                if (result === 'Hit') {
+                    if (playerStats[thrower]) playerStats[thrower].hits++;
+                } else if (result === 'Miss') {
+                    if (playerStats[thrower]) playerStats[thrower].misses++;
+                } else if (result === 'Block') {
+                    if (playerStats[target]) playerStats[target].blocks++;
+                } else if (result === 'Catch') {
+                    if (playerStats[target]) playerStats[target].catches++;
+                }
+            }
+            
+            // Then add stats from current game up to current play
             for (let i = 1; i <= currentPlay && i < gameLog.length; i++) {
                 const play = gameLog[i];
                 if (!play.Thrower || !play.Target || !play.Result) continue;
@@ -546,9 +583,9 @@
         }
         
         function updateStatsDisplay() {
-            // Update Team 1 stats
+            // Update Team 1 stats - show ALL roster players
             let team1HTML = '';
-            team1Players.forEach(playerId => {
+            team1Roster.forEach(playerId => {
                 const stats = playerStats[playerId];
                 const playerName = playerNames[playerId] || playerId.substring(playerId.length - 4);
                 const shortName = playerName.includes(' ') ? playerName.split(' ')[1] : playerName;
@@ -580,9 +617,9 @@
             });
             document.getElementById('team1Stats').innerHTML = team1HTML;
             
-            // Update Team 2 stats
+            // Update Team 2 stats - show ALL roster players
             let team2HTML = '';
-            team2Players.forEach(playerId => {
+            team2Roster.forEach(playerId => {
                 const stats = playerStats[playerId];
                 const playerName = playerNames[playerId] || playerId.substring(playerId.length - 4);
                 const shortName = playerName.includes(' ') ? playerName.split(' ')[1] : playerName;
@@ -885,7 +922,7 @@
                 // Show match complete message
                 const nextGameBtn = document.querySelector('.next-game-btn');
                 if (nextGameBtn) {
-                    nextGameBtn.textContent = 'Match Complete! âœ“';
+                    nextGameBtn.textContent = 'Match Complete! Ã¢Å“â€œ';
                     nextGameBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
                     nextGameBtn.style.cursor = 'default';
                     nextGameBtn.onclick = null;

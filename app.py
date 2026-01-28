@@ -428,6 +428,16 @@ def animate_match(match_index, game_index=None):
         if hasattr(player, 'name') and player.name:
             player_names[player.pid] = player.name
     
+    # Get all roster player IDs
+    team1_roster = [p.pid for p in match.team1.players]
+    team2_roster = [p.pid for p in match.team2.players]
+    
+    # Calculate cumulative stats across ALL games up to and including current game
+    all_games_logs = []
+    for i in range(game_index + 1):
+        if i < len(match.games) and hasattr(match.games[i], 'log'):
+            all_games_logs.extend(match.games[i].log)
+    
     # Calculate which set we're in by counting games
     current_set = 0
     games_counted = 0
@@ -471,11 +481,14 @@ def animate_match(match_index, game_index=None):
         'game_in_set': game_in_set,
         'set_scores': current_set_scores,
         'game_scores': current_game_scores,
-        'is_tournament': False
+        'is_tournament': False,
+        'team1_roster': team1_roster,
+        'team2_roster': team2_roster
     }
     
     return render_template('dodgeball_animation.html', 
                          game_log=game_log,
+                         all_games_logs=all_games_logs,
                          match_info=match_info,
                          match_index=match_index,
                          game_index=game_index,
