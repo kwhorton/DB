@@ -48,6 +48,8 @@
         .global-controls {
             display: flex;
             justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
             margin-bottom: 30px;
         }
 
@@ -63,13 +65,35 @@
             transition: all 0.3s;
         }
 
-        .global-controls button:hover {
+        .global-controls button:hover:not(:disabled) {
             transform: scale(1.05);
             box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
         }
 
-        .bracket-section {
-            margin-bottom: 40px;
+        .global-controls button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .global-controls .btn-reset {
+            border-color: #e74c3c;
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        }
+
+        .global-controls .btn-next-game {
+            border-color: #2ecc71;
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+        }
+
+        .global-controls .btn-next-match {
+            border-color: #3498db;
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        }
+            
+        .bracket-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
         }
 
         .bracket-header {
@@ -100,50 +124,11 @@
             color: white;
         }
 
-        .section-controls {
-            display: flex;
-            gap: 8px;
-        }
-
-        .section-controls button {
-            padding: 8px 16px;
-            font-size: 12px;
-            cursor: pointer;
-            border: 1px solid rgba(255,255,255,0.3);
-            border-radius: 4px;
-            background-color: rgba(255,255,255,0.2);
-            color: white;
-            font-weight: bold;
-            transition: all 0.2s;
-        }
-
-        .section-controls button:hover:not(:disabled) {
-            background-color: rgba(255,255,255,0.3);
-            transform: scale(1.05);
-        }
-
-        .section-controls button:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-
-        .btn-section-toggle {
-            background: rgba(255,255,255,0.25);
-        }
-
-        .btn-section-next {
-            background: rgba(46, 204, 113, 0.8);
-        }
-
-        .btn-section-reset {
-            background: rgba(231, 76, 60, 0.8);
-        }
-
         .bracket {
             display: flex;
             justify-content: space-around;
             align-items: center;
-            min-height: 400px;
+            min-height: 200px;
             position: relative;
         }
 
@@ -151,7 +136,7 @@
             display: flex;
             flex-direction: column;
             justify-content: space-around;
-            min-height: 400px;
+            min-height: 200px;
             padding: 0 20px;
         }
 
@@ -168,8 +153,8 @@
             background: white;
             border: 2px solid #ddd;
             border-radius: 8px;
-            margin: 10px 0;
-            min-width: 200px;
+            margin: 6px 0;
+            min-width: 160px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             transition: all 0.3s ease;
         }
@@ -210,7 +195,7 @@
         }
 
         .team {
-            padding: 10px 15px;
+            padding: 6px 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -295,8 +280,69 @@
             color: #999;
         }
 
+        .finish-order {
+            margin-bottom: 20px;
+        }
+
+        .finish-order-title {
+            text-align: center;
+            font-weight: bold;
+            color: #555;
+            font-size: 14px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .finish-order-row {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .finish-slot {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 6px 12px;
+            border-radius: 6px;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            min-width: 70px;
+            transition: all 0.3s ease;
+        }
+
+        .finish-slot.filled {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+        }
+
+        .finish-slot.filled .finish-rank,
+        .finish-slot.filled .finish-team {
+            color: white;
+        }
+
+        .finish-rank {
+            font-size: 11px;
+            font-weight: bold;
+            color: #999;
+            text-transform: uppercase;
+        }
+
+        .finish-team {
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+            margin-top: 2px;
+            white-space: nowrap;
+        }
+            
         /* Responsive design */
         @media (max-width: 1200px) {
+            .bracket-grid {
+                grid-template-columns: 1fr;
+            }
+            
             .bracket {
                 overflow-x: auto;
             }
@@ -315,9 +361,8 @@
 
     <div class="tournament-container">
         <h2>Week {{ tournament_data.week }} Tournament Bracket</h2>
-        <div class="global-controls">
-            <button onclick="showAllResults()">Show All</button>
-        </div>
+        <div class="global-controls" id="globalControls"></div>
+        <div class="finish-order" id="finishOrder"></div>
         <div id="tournamentBracket"></div>
     </div>
 
@@ -326,14 +371,6 @@
         
         // Store match states
         const matchStates = {};
-
-        // Define sections and their matches
-        const sections = {
-            winners: [0, 1, 2, 3, 7, 8, 13],
-            losers: [4, 5, 9, 10, 12, 14],
-            finals: [15, 16],
-            placement: [6, 11]
-        };
 
         // Define match dependencies
         const matchDependencies = {
@@ -344,6 +381,8 @@
             6: [4, 5], 11: [9, 10]
         };
 
+        const allMatchIndices = tournamentData.matches.map((_, i) => i).filter(i => tournamentData.matches[i]);
+    
         function initializeMatchState(matchIndex) {
             const match = tournamentData.matches[matchIndex];
             if (!match || !match.games) return;
@@ -356,63 +395,73 @@
             };
         }
 
+        function isMatchComplete(matchIndex) {
+            const state = matchStates[matchIndex];
+            if (!state) return false;
+            return state.mode === 'final' ||
+                   (state.mode === 'progressive' && (state.team1Score === 3 || state.team2Score === 3));
+        }
+
         function canShowTeams(matchIndex) {
             if (!matchDependencies[matchIndex]) return true;
-            const dependencies = matchDependencies[matchIndex];
-            return dependencies.every(depIndex => {
-                const depState = matchStates[depIndex];
-                return depState && (depState.mode === 'final' || depState.mode === 'progressive');
-            });
+            return matchDependencies[matchIndex].every(isMatchComplete);
+        }
+
+        function canShowTeamSlot(matchIndex, slot) {
+            const deps = matchDependencies[matchIndex];
+            if (!deps) return true; // round 1 — no dependency, team is always known
+            const depIndex = deps.length === 1 ? deps[0] : (slot === 1 ? deps[0] : deps[1]);
+            return isMatchComplete(depIndex);
         }
 
         function shouldShowGrandFinal2() {
-            const gf1State = matchStates[15];
-            return gf1State && (gf1State.mode === 'final' || gf1State.mode === 'progressive');
+            return isMatchComplete(15);
         }
 
-        function canRevealSection(sectionName) {
-            const sectionMatches = sections[sectionName];
-            const firstMatch = sectionMatches[0];
-            return canShowTeams(firstMatch);
-        }
-
-        function getNextMatchToReveal(sectionName) {
-            const sectionMatches = sections[sectionName];
-            
-            for (const matchIndex of sectionMatches) {
+        function getNextMatchToReveal() {
+            for (const matchIndex of allMatchIndices) {
                 const match = tournamentData.matches[matchIndex];
-                if (!match) continue;
-                
                 const state = matchStates[matchIndex];
-                if (!state) initializeMatchState(matchIndex);
-                if (!canShowTeams(matchIndex)) continue;
-                
+                if (!state || !canShowTeams(matchIndex)) continue;
+
                 if (state.mode === 'hidden') {
-                    return { matchIndex, needsToggle: true, needsNext: false };
+                    return { matchIndex, needsToggle: true };
                 } else if (state.mode === 'progressive') {
                     const isComplete = state.team1Score === 3 || state.team2Score === 3;
                     if (!isComplete && state.currentGame < match.games.length) {
-                        return { matchIndex, needsToggle: false, needsNext: true };
+                        return { matchIndex, needsToggle: false };
                     }
                 }
             }
             return null;
         }
+            
+        function getPlacements() {
+            const m = tournamentData.matches;
+            const places = [];
 
-        function toggleSection(sectionName) {
-            const sectionMatches = sections[sectionName];
-            for (const matchIndex of sectionMatches) {
-                const match = tournamentData.matches[matchIndex];
-                if (!match) continue;
-                const state = matchStates[matchIndex];
-                if (!canShowTeams(matchIndex)) continue;
-                if (state.mode === 'hidden') {
-                    state.mode = 'final';
-                    renderTournament();
-                    return;
-                }
+            const deciderIndex = m[16] ? 16 : 15;
+            if (isMatchComplete(deciderIndex)) {
+                const d = m[deciderIndex];
+                places[0] = d.winner === 1 ? d.team1_name : d.team2_name;
+                places[1] = d.winner === 1 ? d.team2_name : d.team1_name;
             }
-            renderTournament();
+
+            [
+                { rank: 3, matchIndex: 14, slot: 'loser' },   // Losers Final
+                { rank: 4, matchIndex: 12, slot: 'loser' },   // LB R3
+                { rank: 5, matchIndex: 11, slot: 'winner' },  // 5th/6th Place
+                { rank: 6, matchIndex: 11, slot: 'loser' },
+                { rank: 7, matchIndex: 6, slot: 'winner' },   // 7th/8th Place
+                { rank: 8, matchIndex: 6, slot: 'loser' },
+            ].forEach(({ rank, matchIndex, slot }) => {
+                if (!isMatchComplete(matchIndex)) return;
+                const match = m[matchIndex];
+                const isTeam1 = (slot === 'winner') === (match.winner === 1);
+                places[rank - 1] = isTeam1 ? match.team1_name : match.team2_name;
+            });
+
+            return places; // sparse: places[0] = 1st, ..., places[7] = 8th
         }
 
         function showAllResults() {
@@ -426,36 +475,45 @@
             });
             renderTournament();
         }
-            
-        function nextInSection(sectionName) {
-            const nextMatch = getNextMatchToReveal(sectionName);
-            if (!nextMatch) return;
-            
-            const { matchIndex, needsToggle, needsNext } = nextMatch;
+
+        function nextGame() {
+            const next = getNextMatchToReveal();
+            if (!next) return;
+
+            const { matchIndex, needsToggle } = next;
             const state = matchStates[matchIndex];
             const match = tournamentData.matches[matchIndex];
-            
+
             if (needsToggle) {
                 state.mode = 'progressive';
                 state.currentGame = 0;
                 state.team1Score = 0;
                 state.team2Score = 0;
             }
-            
-            if (needsNext || needsToggle) {
-                if (state.currentGame < match.games.length) {
-                    const gameWinner = match.games[state.currentGame].winner;
-                    if (gameWinner === 1) state.team1Score++;
-                    else if (gameWinner === 2) state.team2Score++;
-                    state.currentGame++;
-                }
+
+            if (state.currentGame < match.games.length) {
+                const gameWinner = match.games[state.currentGame].winner;
+                if (gameWinner === 1) state.team1Score++;
+                else if (gameWinner === 2) state.team2Score++;
+                state.currentGame++;
             }
             renderTournament();
         }
 
-        function resetSection(sectionName) {
-            const sectionMatches = sections[sectionName];
-            sectionMatches.forEach(matchIndex => {
+        function nextMatch() {
+            for (const matchIndex of allMatchIndices) {
+                const state = matchStates[matchIndex];
+                if (!state || !canShowTeams(matchIndex)) continue;
+                if (state.mode === 'hidden') {
+                    state.mode = 'final';
+                    renderTournament();
+                    return;
+                }
+            }
+        }
+
+        function resetAll() {
+            allMatchIndices.forEach(matchIndex => {
                 const state = matchStates[matchIndex];
                 if (state) {
                     state.mode = 'hidden';
@@ -467,61 +525,40 @@
             renderTournament();
         }
 
-        function getSectionButtonStates(sectionName) {
-            const canReveal = canRevealSection(sectionName);
-            const sectionMatches = sections[sectionName];
-            
-            const anyRevealed = sectionMatches.some(idx => {
+        function getGlobalButtonStates() {
+            const anyRevealed = allMatchIndices.some(idx => {
                 const state = matchStates[idx];
                 return state && (state.mode === 'final' || state.mode === 'progressive');
             });
 
-            const hasNextToShow = sectionMatches.some(idx => {
+            const hasNextMatch = allMatchIndices.some(idx => {
                 const match = tournamentData.matches[idx];
-                if (!match) return false;
                 const state = matchStates[idx];
-                return state && state.mode === 'hidden' && canShowTeams(idx);
+                return match && state && state.mode === 'hidden' && canShowTeams(idx);
             });
 
-            const hasNext = getNextMatchToReveal(sectionName) !== null;
-
             return {
-                canReveal,
-                anyRevealed,
-                hasNextToShow,
-                hasNext,
+                hasNextGame: getNextMatchToReveal() !== null,
+                hasNextMatch,
                 showReset: anyRevealed
             };
         }
 
         function createMatchHTML(match, matchIndex, matchId) {
-            if (!match) {
-                return `
-                    <div class="match">
-                        <div class="match-header"><span class="match-header-title">${matchId}</span></div>
-                        <div class="team tbd">
-                            <span class="team-name">Not Played</span>
-                        </div>
-                    </div>
-                `;
-            }
-
-            if (!matchStates[matchIndex]) {
-                initializeMatchState(matchIndex);
-            }
-
+            
             const state = matchStates[matchIndex];
-            const showTeams = canShowTeams(matchIndex);
+            const showTeam1 = canShowTeamSlot(matchIndex, 1);
+            const showTeam2 = canShowTeamSlot(matchIndex, 2);
 
-            if (!showTeams) {
+            if (!showTeam1 || !showTeam2) {
                 return `
                     <div class="match" id="match-${matchIndex}">
                         <div class="match-header"><span class="match-header-title">${matchId} <span class="best-of">(Bo5)</span></span></div>
-                        <div class="team tbd">
-                            <span class="team-name">TBD</span>
+                        <div class="team ${showTeam1 ? '' : 'tbd'}">
+                            <span class="team-name">${showTeam1 ? match.team1_name : 'TBD'}</span>
                         </div>
-                        <div class="team tbd">
-                            <span class="team-name">TBD</span>
+                        <div class="team ${showTeam2 ? '' : 'tbd'}">
+                            <span class="team-name">${showTeam2 ? match.team2_name : 'TBD'}</span>
                         </div>
                     </div>
                 `;
@@ -588,103 +625,113 @@
             `;
         }
 
+        function renderControls() {
+            const controls = document.getElementById('globalControls');
+            const g = getGlobalButtonStates();
+
+            controls.innerHTML = `
+                <button onclick="showAllResults()">Show All</button>
+                ${g.showReset ? '<button class="btn-reset" onclick="resetAll()">Reset</button>' : ''}
+                <button class="btn-next-game" onclick="nextGame()" ${!g.hasNextGame ? 'disabled' : ''}>Next Game</button>
+                <button class="btn-next-match" onclick="nextMatch()" ${!g.hasNextMatch ? 'disabled' : ''}>Next Match</button>
+            `;
+        }
+
+        function renderFinishOrder() {
+            const container = document.getElementById('finishOrder');
+            const places = getPlacements();
+            const labels = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'];
+
+            container.innerHTML = `
+                <div class="finish-order-title">Final Standings</div>
+                <div class="finish-order-row">
+                    ${labels.map((label, i) => `
+                        <div class="finish-slot ${places[i] ? 'filled' : ''}">
+                            <span class="finish-rank">${label}</span>
+                            <span class="finish-team">${places[i] || '—'}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+            
         function renderTournament() {
             const container = document.getElementById('tournamentBracket');
             const m = tournamentData.matches;
 
-            const winnersButtons = getSectionButtonStates('winners');
-            const losersButtons = getSectionButtonStates('losers');
-            const finalsButtons = getSectionButtonStates('finals');
-            const placementButtons = getSectionButtonStates('placement');
-
+            renderControls();
+            renderFinishOrder();
+            
             container.innerHTML = `
-                <div class="bracket-section">
-                    <div class="bracket-header">
-                        <div class="bracket-title">Winners Bracket</div>
-                        <div class="section-controls">
-                            ${winnersButtons.showReset ? '<button class="btn-section-reset" onclick="resetSection(\'winners\')">Reset</button>' : ''}
-                            <button class="btn-section-toggle" onclick="toggleSection('winners')" ${!winnersButtons.hasNextToShow ? 'disabled' : ''}>Show Next</button>
-                            <button class="btn-section-next" onclick="nextInSection('winners')" ${!winnersButtons.hasNext ? 'disabled' : ''}>Next</button>
+                <div class="bracket-grid">
+                    <div class="bracket-section">
+                        <div class="bracket-header">
+                            <div class="bracket-title">Winners Bracket</div>
+                        </div>
+                        <div class="bracket">
+                            <div class="round">
+                                <div class="round-title">Round 1</div>
+                                ${createMatchHTML(m[0], 0, 'WB R1-1')}
+                                ${createMatchHTML(m[1], 1, 'WB R1-2')}
+                                ${createMatchHTML(m[2], 2, 'WB R1-3')}
+                                ${createMatchHTML(m[3], 3, 'WB R1-4')}
+                            </div>
+                            <div class="round">
+                                <div class="round-title">Round 2</div>
+                                ${createMatchHTML(m[7], 7, 'WB R2-1')}
+                                ${createMatchHTML(m[8], 8, 'WB R2-2')}
+                            </div>
+                            <div class="round">
+                                <div class="round-title">Winners Final</div>
+                                ${createMatchHTML(m[13], 13, 'Winners Final')}
+                            </div>
                         </div>
                     </div>
-                    <div class="bracket">
-                        <div class="round">
-                            <div class="round-title">Round 1</div>
-                            ${createMatchHTML(m[0], 0, 'WB R1-1')}
-                            ${createMatchHTML(m[1], 1, 'WB R1-2')}
-                            ${createMatchHTML(m[2], 2, 'WB R1-3')}
-                            ${createMatchHTML(m[3], 3, 'WB R1-4')}
-                        </div>
-                        <div class="round">
-                            <div class="round-title">Round 2</div>
-                            ${createMatchHTML(m[7], 7, 'WB R2-1')}
-                            ${createMatchHTML(m[8], 8, 'WB R2-2')}
-                        </div>
-                        <div class="round">
-                            <div class="round-title">Winners Final</div>
-                            ${createMatchHTML(m[13], 13, 'Winners Final')}
-                        </div>
-                    </div>
-                </div>
 
-                <div class="bracket-section">
-                    <div class="bracket-header losers-header">
-                        <div class="bracket-title">Losers Bracket</div>
-                        <div class="section-controls">
-                            ${losersButtons.showReset ? '<button class="btn-section-reset" onclick="resetSection(\'losers\')">Reset</button>' : ''}
-                            <button class="btn-section-toggle" onclick="toggleSection('losers')" ${!losersButtons.hasNextToShow ? 'disabled' : ''}>Show Next</button>
-                            <button class="btn-section-next" onclick="nextInSection('losers')" ${!losersButtons.hasNext ? 'disabled' : ''}>Next</button>
+                    <div class="bracket-section">
+                        <div class="bracket-header losers-header">
+                            <div class="bracket-title">Losers Bracket</div>
+                        </div>
+                        <div class="bracket">
+                            <div class="round">
+                                <div class="round-title">Round 1</div>
+                                ${createMatchHTML(m[4], 4, 'LB R1-1')}
+                                ${createMatchHTML(m[5], 5, 'LB R1-2')}
+                            </div>
+                            <div class="round">
+                                <div class="round-title">Round 2</div>
+                                ${createMatchHTML(m[9], 9, 'LB R2-1')}
+                                ${createMatchHTML(m[10], 10, 'LB R2-2')}
+                            </div>
+                            <div class="round">
+                                <div class="round-title">Round 3</div>
+                                ${createMatchHTML(m[12], 12, 'LB R3')}
+                            </div>
+                            <div class="round">
+                                <div class="round-title">Losers Final</div>
+                                ${createMatchHTML(m[14], 14, 'Losers Final')}
+                            </div>
                         </div>
                     </div>
-                    <div class="bracket">
-                        <div class="round">
-                            <div class="round-title">Round 1</div>
-                            ${createMatchHTML(m[4], 4, 'LB R1-1')}
-                            ${createMatchHTML(m[5], 5, 'LB R1-2')}
-                        </div>
-                        <div class="round">
-                            <div class="round-title">Round 2</div>
-                            ${createMatchHTML(m[9], 9, 'LB R2-1')}
-                            ${createMatchHTML(m[10], 10, 'LB R2-2')}
-                        </div>
-                        <div class="round">
-                            <div class="round-title">Round 3</div>
-                            ${createMatchHTML(m[12], 12, 'LB R3')}
-                        </div>
-                        <div class="round">
-                            <div class="round-title">Losers Final</div>
-                            ${createMatchHTML(m[14], 14, 'Losers Final')}
-                        </div>
-                    </div>
-                </div>
 
-                <div class="bracket-section">
-                    <div class="bracket-header finals-header">
-                        <div class="bracket-title">Grand Finals</div>
-                        <div class="section-controls">
-                            ${finalsButtons.showReset ? '<button class="btn-section-reset" onclick="resetSection(\'finals\')">Reset</button>' : ''}
-                            <button class="btn-section-toggle" onclick="toggleSection('finals')" ${!finalsButtons.hasNextToShow ? 'disabled' : ''}>Show Next</button>
-                            <button class="btn-section-next" onclick="nextInSection('finals')" ${!finalsButtons.hasNext ? 'disabled' : ''}>Next</button>
+                    <div class="bracket-section">
+                        <div class="bracket-header finals-header">
+                            <div class="bracket-title">Grand Finals</div>
+                        </div>
+                        <div class="grand-finals">
+                            ${createMatchHTML(m[15], 15, 'Grand Final')}
+                            ${shouldShowGrandFinal2() && m[16] ? createMatchHTML(m[16], 16, 'Grand Final 2') : ''}
                         </div>
                     </div>
-                    <div class="grand-finals">
-                        ${createMatchHTML(m[15], 15, 'Grand Final')}
-                        ${shouldShowGrandFinal2() && m[16] ? createMatchHTML(m[16], 16, 'Grand Final 2') : ''}
-                    </div>
-                </div>
 
-                <div class="bracket-section">
-                    <div class="bracket-header placement-header">
-                        <div class="bracket-title">Placement Matches</div>
-                        <div class="section-controls">
-                            ${placementButtons.showReset ? '<button class="btn-section-reset" onclick="resetSection(\'placement\')">Reset</button>' : ''}
-                            <button class="btn-section-toggle" onclick="toggleSection('placement')" ${!placementButtons.hasNextToShow ? 'disabled' : ''}>Show Next</button>
-                            <button class="btn-section-next" onclick="nextInSection('placement')" ${!placementButtons.hasNext ? 'disabled' : ''}>Next</button>
+                    <div class="bracket-section">
+                        <div class="bracket-header placement-header">
+                            <div class="bracket-title">Placement Matches</div>
                         </div>
-                    </div>
-                    <div class="placement-matches">
-                        ${createMatchHTML(m[11], 11, '5th/6th Place')}
-                        ${createMatchHTML(m[6], 6, '7th/8th Place')}
+                        <div class="placement-matches">
+                            ${createMatchHTML(m[11], 11, '5th/6th Place')}
+                            ${createMatchHTML(m[6], 6, '7th/8th Place')}
+                        </div>
                     </div>
                 </div>
             `;
