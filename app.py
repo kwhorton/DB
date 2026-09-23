@@ -495,6 +495,102 @@ def animate_match(match_index, game_index=None):
                          player_names=player_names)
 
 
+@app.route('/animate/tournament/<int:tournament_id>/<int:match_index>')
+@app.route('/animate/tournament/<int:tournament_id>/<int:match_index>/game/<int:game_index>')
+def animate_tournament_match(tournament_id, match_index, game_index=None):
+    tier_data = get_current_tier_data()
+    all_tourneys = tier_data['all_tourneys']
+
+    if tournament_id >= len(all_tourneys):
+        return "Tournament not found", 404
+
+    tourney = all_tourneys[tournament_id]
+
+    if match_index >= len(tourney.matches) or not tourney.matches[match_index]:
+        return "Match not found", 404
+
+    match = tourney.matches[match_index]
+
+    if game_index is None:
+        game_index = 0
+
+    if not hasattr(match, 'games') or game_index >= len(match.games):
+        return "Game not found", 404
+
+    game = match.games[game_index]
+
+    game_log = []
+    if hasattr(game, 'log') and game.log:
+        game_log = game.log
+
+    player_names = {}
+    for player in match.team1.players:
+        if hasattr(player, 'name') and player.name:
+            player_names[player.pid] = player.name
+    for player in match.team2.players:
+        if hasattr(player, 'name') and player.name:
+            player_names[player.pid] = player.name
+
+    team1_roster = [p.pid for p in match.team1.players]
+    team2_roster = [p.pid for p in match.team2.players]
+
+    all_games_logs = []
+    for i in range(game_index + 1):
+        if i < len(match.games) and hasattr(match.games[i], 'log'):
+            all_games_logs.extend(match.games[i].log)
+
+    current_set = 0
+    games_counted = 0
+    game_in_set = 0
+
+    for set_idx, set_result in enumerate(match.set_results):
+        games_in_this_set = set_result[0] + set_result[1]
+        if games_counted + games_in_this_set > game_index:
+            current_set = set_idx
+            game_in_set = game_index - games_counted + 1
+            break
+        games_counted += games_in_this_set
+
+    current_set_scores = [0, 0]
+    for i in range(current_set):
+        if i < len(match.set_results):
+            if match.set_results[i][0] > match.set_results[i][1]:
+                current_set_scores[0] += 1
+            else:
+                current_set_scores[1] += 1
+
+    current_game_scores = [0, 0]
+    set_start_game = sum(match.set_results[i][0] + match.set_results[i][1] for i in range(current_set))
+    for i in range(set_start_game, game_index):
+        if i < len(match.games):
+            winner = match.games[i].winner
+            if winner == 1:
+                current_game_scores[0] += 1
+            elif winner == 2:
+                current_game_scores[1] += 1
+
+    match_info = {
+        'team1': match.team1.team_name,
+        'team2': match.team2.team_name,
+        'week': match.week,
+        'game_number': game_index + 1,
+        'total_games': len(match.games),
+        'current_set': current_set + 1,
+        'game_in_set': game_in_set,
+        'set_scores': current_set_scores,
+        'game_scores': current_game_scores,
+        'is_tournament': True,
+        'team1_roster': team1_roster,
+        'team2_roster': team2_roster
+    }
+
+    return render_template('dodgeball_animation.html',
+                         game_log=game_log,
+                         all_games_logs=all_games_logs,
+                         match_info=match_info,
+                         match_index=match_index,
+                         game_index=game_index,
+                         player_names=player_names)
 
 
 if __name__ == "__main__":
