@@ -39,7 +39,26 @@
             overflow-x: auto;
         }
 
-        h2 {
+        .tournament-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .tournament-header h2 {
+            margin-bottom: 6px;
+        }
+
+        .tournament-meta {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .meta-divider {
+            margin: 0 8px;
+            color: #ccc;
+        }
+
+            h2 {
             text-align: center;
             color: #333;
             margin-bottom: 10px;
@@ -360,7 +379,16 @@
     </div>
 
     <div class="tournament-container">
-        <h2>Week {{ tournament_data.week }} Tournament Bracket</h2>
+        <div class="tournament-header">
+            <h2>{{ tournament_data.tier }} — Week {{ tournament_data.week }} Tournament Bracket</h2>
+            <div class="tournament-meta">
+                <span class="meta-item">{{ tournament_data.year }} Season, Week {{ tournament_data.week }}</span>
+                <span class="meta-divider">•</span>
+                <span class="meta-item">
+                    {{ tournament_data.tournament_type }}{% if tournament_data.tournament_subtype %} ({{ tournament_data.tournament_subtype }}){% endif %}
+                </span>
+            </div>
+        </div>
         <div class="global-controls" id="globalControls"></div>
         <div class="finish-order" id="finishOrder"></div>
         <div id="tournamentBracket"></div>
