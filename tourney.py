@@ -207,5 +207,11 @@ def get_tourney_list(teams,tourney_type):
     
     return teams_list 
 
-
-
+def get_tourney_subtype(tourney_type, group_index, group_teams):
+    if tourney_type == "Division":
+        return group_teams[0].division
+    elif tourney_type == "Score":
+        labels = ['1st/2nd', '3rd/4th', '5th/6th', '7th/8th']
+        return labels[group_index]
+    else:
+        return None

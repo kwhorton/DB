@@ -54,6 +54,7 @@ for tier_name in tier_names:
         for i in range(4):
             tourney = Tournament(teams_lists[i], 2033, week_num)
             tourney.type = tourney_types[w]
+            tourney.subtype = get_tourney_subtype(tourney_types[w], i, teams_lists[i])
             tourney.run_tourney()
             all_tourneys.append(tourney)
             schedule.extend(tourney.matches)

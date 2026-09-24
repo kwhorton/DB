@@ -305,6 +305,10 @@ def view_tournament(tournament_id):
     all_tourneys = tier_data['all_tourneys']
     
     tourney = all_tourneys[tournament_id]
+    current_tier = session.get('current_tier', 'Tier 1')
+
+    tournament_type = getattr(tourney, 'type', None)
+    tournament_subtype = getattr(tourney, 'subtype', None)
     
     # Prepare tournament data
     teams_info = {}
@@ -321,6 +325,9 @@ def view_tournament(tournament_id):
         i+=1
     tournament_data = {
         'week': tourney.week,
+        'tier': current_tier,
+        'tournament_type': tournament_type,
+        'tournament_subtype': tournament_subtype,
         'tournament_id': tournament_id,
         'teams_info': teams_info,
         'matches': []
