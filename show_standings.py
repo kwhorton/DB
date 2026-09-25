@@ -54,7 +54,7 @@ def get_standings_by_division(teams, schedule, all_tourneys, week):
         standings.append(output)
     
     # Sort by score, then FP, then H2H
-    standings = sorted(standings, key=lambda d: (-d['score'], -d['fp'], -d['h2h']))
+    standings = sorted(standings, key=lambda d: (-d['score'], -d['fp'], -d['h2h'], -d['rating']))
     
     # Group by division
     divisions = {}
@@ -89,48 +89,66 @@ def get_playoff_standings(teams, schedule, all_tourneys, current_week):
     # Sort teams within each division
     division_leaders = []
     for division_name, division_teams in divisions.items():
-        division_teams.sort(key=lambda t: (
-            -sum(t.score[0:end]),
-            -t.score[0:end].count(21),
-            -t.score[0:min(4, end)].count(15)
-        ))
-        if division_teams:
-            leader = division_teams[0]
-            team_rating = get_week_rating(leader, display_week)
-            avg_rating = 0.25 * (team_rating['Aim'] + team_rating['Speed'] + 
-                                team_rating['Throw'] + team_rating['Hands'])
-            division_leaders.append({
-                'team': leader,
-                'division': division_name,
-                'score': sum(leader.score[0:end]),
-                'fp': leader.score[0:end].count(21),
-                'h2h': leader.score[0:min(4, end)].count(15),
-                'rating': avg_rating,
-                'is_leader': True
-            })
-    
+
+        all_div_teams_sorted = []
+        for team in division_teams:
+            div_team_data = {
+                'team': team,
+                'division': team.division,
+                'score': sum(team.score[0:end]),
+                'fp': team.score[0:end].count(21),
+                'h2h': team.score[0:min(4, end)].count(15),
+                'rating': team.get_team_rating_week(display_week),
+                'is_leader': False
+            }
+            all_div_teams_sorted.append(div_team_data)
+
+        # Sort all teams in division
+        all_div_teams_sorted.sort(key=lambda x: (-x['score'], -x['fp'], -x['h2h'], -x['rating']))
+                
+        div_leader_data = all_div_teams_sorted[0]
+        division_leaders.append(div_leader_data)
+##
+##        division_teams.sort(key=lambda t: (
+##            -sum(t.score[0:end]),
+##            -t.score[0:end].count(21),
+##            -t.score[0:min(4, end)].count(15)
+##        ))
+##        if division_teams:
+##            leader = division_teams[0]
+##
+##            division_leaders.append({
+##                'team': leader,
+##                'division': division_name,
+##                'score': sum(leader.score[0:end]),
+##                'fp': leader.score[0:end].count(21),
+##                'h2h': leader.score[0:min(4, end)].count(15),
+##                'rating': team.get_team_rating_week(display_week),
+##                'is_leader': True
+##            })
+##    
     # Sort division leaders by score
-    division_leaders.sort(key=lambda x: (-x['score'], -x['fp'], -x['h2h']))
+    division_leaders.sort(key=lambda x: (-x['score'], -x['fp'], -x['h2h'],-x['rating']))
     
     # Get all teams sorted for wildcard
     all_teams_sorted = []
     for team in teams:
-        team_rating = get_week_rating(team, display_week)
-        avg_rating = 0.25 * (team_rating['Aim'] + team_rating['Speed'] + 
-                            team_rating['Throw'] + team_rating['Hands'])
+     #   team_rating = get_week_rating(team, display_week)
+     #   avg_rating = 0.25 * (team_rating['Aim'] + team_rating['Speed'] + 
+     #                       team_rating['Throw'] + team_rating['Hands'])
         team_data = {
             'team': team,
             'division': team.division,
             'score': sum(team.score[0:end]),
             'fp': team.score[0:end].count(21),
             'h2h': team.score[0:min(4, end)].count(15),
-            'rating': avg_rating,
+            'rating': team.get_team_rating_week(display_week),
             'is_leader': False
         }
         all_teams_sorted.append(team_data)
     
     # Sort all teams
-    all_teams_sorted.sort(key=lambda x: (-x['score'], -x['fp'], -x['h2h']))
+    all_teams_sorted.sort(key=lambda x: (-x['score'], -x['fp'], -x['h2h'], -x['rating']))
     
     # Create playoff standings: division leaders first, then remaining teams
     playoff_standings = []
@@ -138,6 +156,7 @@ def get_playoff_standings(teams, schedule, all_tourneys, current_week):
     
     # Add division leaders
     for leader in division_leaders:
+        leader['is_leader'] = True
         playoff_standings.append(leader)
     
     # Add remaining teams (wildcards)

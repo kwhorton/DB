@@ -15,6 +15,7 @@ class Player:
         self.throwmax = throw
         self.handsmax = hands
         self.all_stats = []
+        self.start_stats = {'Aim': aim, 'Speed': speed, 'Throw': throw, 'Hands': hands}
         
 
     def get_average_score(self):
@@ -22,13 +23,12 @@ class Player:
         return average_score
 
     def get_average_score_week(self,week):
-        if week > 0:
-            x = [(stats['Aim'],stats['Speed'],stats['Throw'],stats['Hands']) for stats in self.all_stats if stats['Week']==week]
-            average_score = 0.25*sum(x[0])
-        elif week == 0:
-            average_score = 0.25*(self.aim + self.speed + self.throw + self.hands)
-        return average_score
-
+        if week == 0:
+            s = self.start_stats
+            return 0.25*(s['Aim']+s['Speed']+s['Throw']+s['Hands'])
+        x = [(stats['Aim'],stats['Speed'],stats['Throw'],stats['Hands']) for stats in self.all_stats if stats['Week']==week]
+        return 0.25*sum(x[0])
+        
 
     def get_player_perf(self,schedule,week):
         player_games = []

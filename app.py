@@ -102,14 +102,15 @@ def team_page(team_name):
         players = []
         for player in team.players:
             # Use initial stats (aimmax, speedmax, etc.)
+            s = player.start_stats
             players.append({
                 'pid': player.pid,
                 'name': player.name,
-                'avg_stats': (player.aimmax + player.speedmax + player.throwmax + player.handsmax) / 4,
-                'aim': player.aimmax,
-                'speed': player.speedmax,
-                'throw': player.throwmax,
-                'hands': player.handsmax,
+                'avg_stats': 0.25*(s['Aim']+s['Speed']+s['Throw']+s['Hands']),
+                'aim': s['Aim'],
+                'speed': s['Speed'],
+                'throw': s['Throw'],
+                'hands': s['Hands'],
                 'games_played': 0
             })
         
