@@ -200,105 +200,68 @@ def wkschedule(week = None):
     schedule = tier_data['schedule']
     all_tourneys = tier_data['all_tourneys']
     
-    if week is None:
-        week= 1
-
-    week_num = float(week)
+    week_num = float(week) if week is not None else 1
 
     # Determine if results should be shown
     show_results = week_num <= current_week
-    if show_results:
-        tourney_show = True
-    else:
-        tourney_show = week_num not in [7,11,14]
+    tourney_show = True if show_results else week_num not in [7, 11, 14]
 
-    display_week = min(week_num,current_week)
-    end = (display_week>=3)*(display_week+1) + (display_week<3)*(2*display_week-2) 
-    end = int(end)
+    # Each team as it enters week_num, limited to what's known as of current_week:
+    #   n           = number of score entries to count
+    #   rating_week = which all_stats entry to use for ratings
+    n, rating_week = snapshot(week_num, current_week)
 
     if week_num in [1, 1.5, 2, 2.5]:
         filtered_schedule = [match for match in schedule if match.week==week_num]
 
         for event in filtered_schedule:
-
-            # Find the actual index in the full schedule list
             event.schedule_index = schedule.index(event)
-            
-            event.team1_ratings = get_week_rating(event.team1,display_week)
-            event.team2_ratings = get_week_rating(event.team2,display_week)
-
-            event.team1_rating = 0.25*(event.team1_ratings['Aim']+event.team1_ratings['Speed']+event.team1_ratings['Throw']+event.team1_ratings['Hands'])
-            event.team2_rating = 0.25*(event.team2_ratings['Aim']+event.team2_ratings['Speed']+event.team2_ratings['Throw']+event.team2_ratings['Hands'])
-            
-
-            event.team1_score = sum(event.team1.score[0:end])
-            event.team2_score = sum(event.team2.score[0:end])
-
+            event.team1_ratings = get_week_rating(event.team1, rating_week)
+            event.team2_ratings = get_week_rating(event.team2, rating_week)
+            event.team1_rating = sum(event.team1_ratings.values()) / 4
+            event.team2_rating = sum(event.team2_ratings.values()) / 4
+            event.team1_score = sum(event.team1.score[:n])
+            event.team2_score = sum(event.team2.score[:n])
             event.team1_division = event.team1.division
             event.team2_division = event.team2.division
+            event.team1_place = division_place(event.team1, teams, n, rating_week)
+            event.team2_place = division_place(event.team2, teams, n, rating_week)
+          
 
-            division_teams_1 = [t for t in teams if t.division == event.team1.division]
-            division_teams_2 = [t for t in teams if t.division == event.team2.division]
-            
-            # Sort by score, FP, H2H
-            division_teams_1.sort(key=lambda t: (
-                -sum(t.score[0:end]),
-                -t.score[0:end].count(21),
-                -t.score[0:min(4, end)].count(15)
-            ))
-            division_teams_2.sort(key=lambda t: (
-                -sum(t.score[0:end]),
-                -t.score[0:end].count(21),
-                -t.score[0:min(4, end)].count(15)
-            ))
-            
-            event.team1_place = [team.team_name for team in division_teams_1].index(event.team1.team_name) + 1
-            event.team2_place = [team.team_name for team in division_teams_2].index(event.team2.team_name) + 1
-  
-
-        return render_template('wkschedule.html', week = week_num, is_tournament = False, events = filtered_schedule, show_results = show_results, tourney_show = None)
-
+        return render_template('wkschedule.html', week=week_num, is_tournament=False,
+                               events=filtered_schedule, show_results=show_results,
+                               tourney_show=None)
 
     else:
         tournaments = []
         for tourney in all_tourneys:
             if tourney.week == week_num:
-                teams_info= []
+                teams_info = []
                 for team in tourney.team_list:
-                    
-                    team_division = team.division
-                    division_teams = [t for t in teams if t.division == team_division]
-                    division_teams.sort(key=lambda t: (
-                        -sum(t.score[0:end]),
-                        -t.score[0:end].count(21),
-                        -t.score[0:min(4, end)].count(15)
-                        ))
-                    team_place = [team1.team_name for team1 in division_teams].index(team.team_name) + 1
-                    team_ratings = get_week_rating(team,display_week)
-                    team_rating = 0.25*(team_ratings['Aim']+team_ratings['Speed']+team_ratings['Throw']+team_ratings['Hands'])
-                    team_info = {
+                    team_ratings = get_week_rating(team, rating_week)
+                    s = team.score[:n]
+                    teams_info.append({
                         'team': team.team_name,
-                        'score': sum(team.score[0:end]),
+                        'score': sum(s),
                         'division': team.division,
-                        'place': team_place,
-                        'ratings':team_ratings,
-                        'rating': team_rating,
-                        'FP': team.score[0:end].count(21),
-                        'H2H': team.score[0:min(4,end)].count(15)
-                        }
+                        'place': division_place(team, teams, n, rating_week),
+                        'ratings': team_ratings,
+                        'rating': sum(team_ratings.values()) / 4,
+                        'FP': s.count(21),
+                        'H2H': team.score[:min(4, n)].count(15)
+                    })
 
-                    teams_info.append(team_info)
+                # Score, tourney wins, H2H match wins, then rating
+                teams_info.sort(key=lambda x: (-x['score'], -x['FP'], -x['H2H'], -x['rating']))
 
-                teams_info.sort(key=lambda x: (-x['score'],-x['FP'],-x['H2H']))
-                
-                tourney_info = {
-                    'id': tourney.id,  # Use the actual ID
+                tournaments.append({
+                    'id': tourney.id,
                     'teams_info': teams_info
-                }
-                tournaments.append(tourney_info)
-                
-        return render_template('wkschedule.html', week= week_num, is_tournament = True, tournaments = tournaments, show_results = show_results, tourney_show = tourney_show)
+                })
 
+        return render_template('wkschedule.html', week=week_num, is_tournament=True,
+                               tournaments=tournaments, show_results=show_results,
+                               tourney_show=tourney_show)
 
 @app.route('/tournament/<int:tournament_id>')
 def view_tournament(tournament_id):
