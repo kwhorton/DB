@@ -105,6 +105,13 @@
             border-bottom: 2px solid #f0f0f0;
         }
 
+        .tournament-subtitle {
+            font-size: 13px;
+            font-weight: normal;
+            color: #764ba2;
+            margin-top: 4px;
+        }
+
         .teams-list {
             list-style: none;
             padding: 0;
@@ -383,7 +390,12 @@
             <div class="tournaments-grid">
                 {% for tournament in tournaments %}
                 <div class="tournament-card">
-                    <div class="tournament-title">Tournament {{ loop.index }}</div>
+                    <div class="tournament-title">
+                        Tournament {{ loop.index }}
+                        {% if tournament.type %}
+                        <div class="tournament-subtitle">{{ tournament.type }}{% if tournament.subtype %} · {{ tournament.subtype }}{% endif %}</div>
+                        {% endif %}
+                    </div>
                     {% if tourney_show %}
                     <ul class="teams-list">
                         {% for team_info in tournament.teams_info %}

@@ -230,6 +230,8 @@
             font-weight: 500;
             color: #333;
             flex-grow: 1;
+            display: flex;          /* keeps the seed badge beside the name */
+            align-items: center;
         }
 
         .team-scores {
@@ -355,6 +357,27 @@
             margin-top: 2px;
             white-space: nowrap;
         }
+
+        .seed-detail {
+            font-size: 11px;
+            color: #777;
+            margin-top: 2px;
+            white-space: nowrap;
+        }
+
+        .team-seed {
+            display: inline-block;
+            flex-shrink: 0;
+            min-width: 18px;
+            margin-right: 6px;
+            padding: 1px 4px;
+            border-radius: 3px;
+            background: #eef0fb;
+            color: #667eea;
+            font-size: 11px;
+            font-weight: bold;
+            text-align: center;
+        }
             
         /* Responsive design */
         @media (max-width: 1200px) {
@@ -390,6 +413,7 @@
             </div>
         </div>
         <div class="global-controls" id="globalControls"></div>
+        <div class="finish-order" id="seedList"></div>
         <div class="finish-order" id="finishOrder"></div>
         <div id="tournamentBracket"></div>
     </div>
@@ -583,10 +607,10 @@
                     <div class="match" id="match-${matchIndex}">
                         <div class="match-header"><span class="match-header-title">${matchId} <span class="best-of">(Bo5)</span></span></div>
                         <div class="team ${showTeam1 ? '' : 'tbd'}">
-                            <span class="team-name">${showTeam1 ? match.team1_name : 'TBD'}</span>
+                            <span class="team-name">${showTeam1 ? teamLabel(match.team1_name) : 'TBD'}</span>
                         </div>
                         <div class="team ${showTeam2 ? '' : 'tbd'}">
-                            <span class="team-name">${showTeam2 ? match.team2_name : 'TBD'}</span>
+                            <span class="team-name">${showTeam2 ? teamLabel(match.team2_name) : 'TBD'}</span>
                         </div>
                     </div>
                 `;
@@ -642,11 +666,11 @@
                         <a href="/animate/tournament/${tournamentData.tournament_id}/${matchIndex}" class="watch-animation-link" title="Watch Animation">🎬</a>
                     </div>
                     <div class="team ${team1Won && state.mode === 'final' ? 'winner' : ''}">
-                        <span class="team-name">${match.team1_name}</span>
+                        <span class="team-name">${teamLabel(match.team1_name)}</span>
                         ${team1ScoresHTML}
                     </div>
                     <div class="team ${team2Won && state.mode === 'final' ? 'winner' : ''}">
-                        <span class="team-name">${match.team2_name}</span>
+                        <span class="team-name">${teamLabel(match.team2_name)}</span>
                         ${team2ScoresHTML}
                     </div>
                 </div>
@@ -662,6 +686,31 @@
                 ${g.showReset ? '<button class="btn-reset" onclick="resetAll()">Reset</button>' : ''}
                 <button class="btn-next-game" onclick="nextGame()" ${!g.hasNextGame ? 'disabled' : ''}>Next Game</button>
                 <button class="btn-next-match" onclick="nextMatch()" ${!g.hasNextMatch ? 'disabled' : ''}>Next Match</button>
+            `;
+        }
+
+        function teamLabel(name) {
+            const info = tournamentData.teams_info[name];
+            if (!info) return name;
+            return `<span class="team-seed" title="Seed ${info.seed} · Score ${info.score} · Rating ${info.rating.toFixed(2)}">${info.seed}</span>${name}`;
+        }
+
+        function renderSeeds() {
+            // teams_info arrives keyed by name (sorted alphabetically), so order by seed
+            const seeds = Object.entries(tournamentData.teams_info)
+                .sort((a, b) => a[1].seed - b[1].seed);
+
+            document.getElementById('seedList').innerHTML = `
+                <div class="finish-order-title">Seeds</div>
+                <div class="finish-order-row">
+                    ${seeds.map(([name, info]) => `
+                        <div class="finish-slot">
+                            <span class="finish-rank">#${info.seed}</span>
+                            <span class="finish-team">${name}</span>
+                            <span class="seed-detail">${info.score} pts · ${info.rating.toFixed(2)}</span>
+                        </div>
+                    `).join('')}
+                </div>
             `;
         }
 
@@ -688,6 +737,7 @@
             const m = tournamentData.matches;
 
             renderControls();
+            renderSeeds();
             renderFinishOrder();
             
             container.innerHTML = `
