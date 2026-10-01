@@ -65,11 +65,15 @@ def load_teams_and_players(roster_file='roster2033.csv', teams_file='allteams203
     Returns:
     - teams: List of Team objects with their players
     """
-    
-    # Load the CSV files
-    roster_df = pd.read_csv(roster_file)
-    teams_df = pd.read_csv(teams_file)
-    
+    playerdb = load_playerdb(playerdb_file) if playerdb_file else None
+    return build_tier_teams(pd.read_csv(roster_file), pd.read_csv(teams_file), tier, playerdb)
+
+
+def build_tier_teams(roster_df, teams_df, tier, playerdb=None):
+    """
+    Build one tier's Team objects from already-loaded roster and team
+    DataFrames, merging names from playerdb (a list of PlayerDB) if given.
+    """
     # Filter for specified tier
     teams_df = teams_df[teams_df['Level'] == tier]
     
@@ -108,9 +112,8 @@ def load_teams_and_players(roster_file='roster2033.csv', teams_file='allteams203
         
         teams.append(team)
     
-    # If playerdb file is provided, merge the data
-    if playerdb_file:
-        playerdb = load_playerdb(playerdb_file)
+    # If a playerdb is provided, merge the data
+    if playerdb is not None:
         teams = merge_playerdb_with_teams(teams, playerdb)
     
     return teams
@@ -123,22 +126,19 @@ def load_all_tiers(roster_file='roster2033.csv', teams_file='allteams2033.csv', 
     Returns:
     - Dictionary with tier names as keys and team lists as values
     """
+    # Read each file once and share it across tiers
+    roster_df = pd.read_csv(roster_file)
+    teams_df = pd.read_csv(teams_file)
+    playerdb = load_playerdb(playerdb_file) if playerdb_file else None
+
     tiers = {}
     for tier_num in range(1, 5):
         tier_name = f"Tier {tier_num}"
         print(f"Loading {tier_name}...")
-        tiers[tier_name] = load_teams_and_players(
-            roster_file=roster_file,
-            teams_file=teams_file,
-            tier=tier_name,
-            playerdb_file=playerdb_file
-        )
+        tiers[tier_name] = build_tier_teams(roster_df, teams_df, tier_name, playerdb)
         print(f"  Loaded {len(tiers[tier_name])} teams")
     return tiers
 
-
-# Load only Tier 1 by default for backward compatibility
-teams = load_teams_and_players(playerdb_file = "player_db.pkl")
 
 # Load all tiers
 all_tiers = load_all_tiers(playerdb_file = "player_db.pkl")

@@ -1,13 +1,8 @@
 from flask import Flask, render_template, request, session
-import pandas as pd
-import matplotlib.pyplot as plt
-import io
-import base64
 import pickle
 from show_results import *
 from show_standings import *
 from league import H2H_WEEKS, TOURNEY_TYPES, FIRST_TOURNEY_WEEK
-import os
 
 # Load all tiers data
 with open("season_all_tiers.pkl", "rb") as f:

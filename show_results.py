@@ -1,5 +1,5 @@
 import pandas as pd
-from league import H2H_WEEKS, TOURNEY_TYPES, FIRST_TOURNEY_WEEK
+from league import TOURNEY_TYPES
 
 def results(team_name,teams,schedule,all_tourneys,week):
     team_results = []
@@ -67,36 +67,4 @@ def get_week_rating(team,week):
     team_stats['Hands']=team_stats['Hands']/len(team.players)
 
     return team_stats
-
-def get_season_schedule(team_name, teams, schedule, all_tourneys):
-    """Get the season schedule for a team (for Week 0 preview)"""
-    schedule_data = []
-    # Get head-to-head matches
-    for week in H2H_WEEKS:
-        team_match = [match1 for match1 in schedule if match1.week == week and 
-                     (match1.team1.team_name == team_name or match1.team2.team_name == team_name)]
-        if team_match:
-            match = team_match[0]
-            opponent = match.team1.team_name if match.team2.team_name == team_name else match.team2.team_name
-            atvs = 'at' if match.team1.team_name == team_name else 'vs'
-            schedule_data.append({
-                'Week': week,
-                'Event': f"{atvs} {opponent}",
-                'Type': 'Head-to-Head'
-            })
-    
-    # Add tournament weeks
-    for week, tourney_type in enumerate(TOURNEY_TYPES, start=FIRST_TOURNEY_WEEK):
-        schedule_data.append({
-            'Week': week,
-            'Event': f"{tourney_type} Tournament",
-            'Type': 'Tournament'
-        })
-    
-    import pandas as pd
-    df = pd.DataFrame(schedule_data)
-    schedule_html = df.to_html(index=False)
-    
-    return schedule_html
-
 

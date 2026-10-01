@@ -10,17 +10,9 @@ import pickle
 import sys
 from pathlib import Path
 
-
-class PlayerDB:
-    """
-    PlayerDB class definition
-    """
-    def __init__(self, player_id, name, yeargroup):
-        self.player_id = player_id
-        self.name = name
-        self.yeargroup = yeargroup
-        self.seasons = []
-        self.stats = []
+# Import (not redefine) PlayerDB so new entries pickle as player.PlayerDB,
+# which is where main.py and create_teams.py look for it when loading
+from player import PlayerDB
 
 
 class NameGenerator:

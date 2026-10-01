@@ -30,14 +30,6 @@ class Player:
         week1 = next(stats for stats in self.all_stats if stats['Week'] == 1)
         return {k: week1[k] for k in ('Aim', 'Speed', 'Throw', 'Hands')}
 
-    def get_average_score_week(self,week):
-        if week == 0:
-            s = self.get_start_stats()
-            return 0.25*(s['Aim']+s['Speed']+s['Throw']+s['Hands'])
-        x = [(stats['Aim'],stats['Speed'],stats['Throw'],stats['Hands']) for stats in self.all_stats if stats['Week']==week]
-        return 0.25*sum(x[0])
-        
-
     def get_player_perf(self,schedule,week):
         player_games = []
         matches = [match1 for match1 in schedule if match1.week==week]
@@ -130,7 +122,9 @@ def get_improvements(gp):
 
 class PlayerDB:
     """
-    PlayerDB class definition (for reference)
+    A player_db.pkl entry. The pickle refers to this class as player.PlayerDB
+    (older entries as __main__.PlayerDB, which main.py provides through
+    `from player import *`), so it must stay in this module.
     """
     def __init__(self, player_id, name, yeargroup):
         self.player_id = player_id
@@ -143,7 +137,6 @@ class PlayerDB:
 def update_players(teams,schedule,week):
 
     all_perf = []
-    matches = [match1 for match1 in schedule if match1.week == week]
     for team in teams:
         for player in team.players:
             stats = player.get_player_perf(schedule,week)
@@ -166,9 +159,7 @@ def update_players(teams,schedule,week):
             p_speed = [stats['Speed_Perf'] for stats in player.all_stats if stats['Week']==week][0]
             p_throw = [stats['Throw_Perf'] for stats in player.all_stats if stats['Week']==week][0]
             p_hands = [stats['Hands_Perf'] for stats in player.all_stats if stats['Week']==week][0]
-            if p_gp == 0:
-                aim_plus = 0
-            else:
+            if p_gp > 0:
                 imps = get_improvements(p_gp)
                 if p_aim != None:
                     player.aimmax += imps[sum(p_aim > aimq)]
