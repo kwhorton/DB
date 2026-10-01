@@ -87,12 +87,3 @@ print("All tiers saved successfully!")
 print(f"Total tiers: {len(all_tiers_data)}")
 for tier_name, data in all_tiers_data.items():
     print(f"  {tier_name}: {len(data['teams'])} teams, {len(data['schedule'])} matches, {len(data['all_tourneys'])} tournaments")
-
-# Also save Tier 1 separately for backward compatibility
-print("\nSaving Tier 1 to season.pkl for backward compatibility...")
-tier1_data = all_tiers_data['Tier 1']
-with open('season.pkl', 'wb') as file:
-    pickle.dump(tier1_data['teams'], file)
-    pickle.dump(tier1_data['schedule'], file)
-    pickle.dump(tier1_data['all_tourneys'], file)
-print("Tier 1 saved to season.pkl")
