@@ -1,6 +1,6 @@
 import pandas as pd
 from show_results import *
-from league import H2H_WEEKS, TOURNEY_TYPES, FIRST_TOURNEY_WEEK, record_key
+from league import H2H_WEEKS, TOURNEY_TYPES, FIRST_TOURNEY_WEEK, record_key, game_pct
 
 
 WEEKS = H2H_WEEKS + list(range(FIRST_TOURNEY_WEEK, FIRST_TOURNEY_WEEK + len(TOURNEY_TYPES)))
@@ -34,11 +34,17 @@ def rating_week_for(week):
     return week if week >= 1 else 1
 
 def ranked(teams, n, rating_week):
-    """[(team, rating)] best first: record_key on the first n score
-    entries (score, tourney wins, H2H match wins), then rating."""
+    """[(team, rating)] best first by record_key on the first n entries
+    (score, tourney wins, H2H match wins, game win %). The rating is
+    returned for display only; it never breaks ties."""
     rated = [(team, team_rating(team, rating_week)) for team in teams]
-    rated.sort(key=lambda tr: (*record_key(tr[0].score[:n]), -tr[1]))
+    rated.sort(key=lambda tr: record_key(tr[0].score[:n], tr[0].games[:n]))
     return rated
+
+def game_pct_display(team, n):
+    """Game win % through the first n entries, or None before any games."""
+    games = team.games[:n]
+    return game_pct(games) if games else None
 
 def division_place(team, teams, n, rating_week):
     div = ranked((t for t in teams if t.division == team.division), n, rating_week)
@@ -60,7 +66,8 @@ def get_standings_by_division(teams, schedule, all_tourneys, week):
             'rating': rating,
             'score': sum(s),
             'fp': s.count(21),
-            'h2h': s[:4].count(15)
+            'h2h': s[:4].count(15),
+            'gpct': game_pct_display(team, n)
         })
 
     return dict(sorted(divisions.items()))
@@ -81,6 +88,7 @@ def get_playoff_standings(teams, schedule, all_tourneys, current_week):
             'score': sum(s),
             'fp': s.count(21),
             'h2h': s[:4].count(15),
+            'gpct': game_pct_display(team, n),
             'rating': rating,
             'is_leader': team.division not in seen_divisions
         }

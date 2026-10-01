@@ -6,6 +6,7 @@ class Team:
         self.division = division
         self.rating = 0
         self.score = []
+        self.games = []     # (games won, games played), one per score entry
 
     def get_team_rating(self):
         team_scores = 0

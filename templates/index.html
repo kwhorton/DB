@@ -131,6 +131,16 @@
             width: 50px;
         }
 
+        /* Wide tables scroll sideways on narrow screens instead of being cut off */
+        .table-scroll {
+            overflow-x: auto;
+        }
+
+        .col-gpct {
+            width: 70px;
+            white-space: nowrap;
+        }
+
         /* Playoff Standings Styles */
 
         .playoff-section {
@@ -226,6 +236,7 @@
     {% for division, teams in standings_data.items() %}
     <div class="division-card">
         <div class="division-header">{{ division }}</div>
+        <div class="table-scroll">
         <table class="standings-table">
             <thead>
                 <tr>
@@ -235,6 +246,7 @@
                     <th class="col-score">Score</th>
                     <th class="col-fp">FP</th>
                     <th class="col-h2h">H2H</th>
+                    <th class="col-gpct">Game %</th>
                 </tr>
             </thead>
             <tbody>
@@ -248,10 +260,12 @@
                     <td class="stat">{{ team.score }}</td>
                     <td class="stat">{{ team.fp }}</td>
                     <td class="stat">{{ team.h2h }}</td>
+                    <td class="stat">{% if team.gpct is not none %}{{ "%.1f"|format(team.gpct * 100) }}%{% else %}&mdash;{% endif %}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
+        </div>
     </div>
     {% endfor %}
     </div>
@@ -260,6 +274,7 @@
     <div class="playoff-section">
         <div class="playoff-card">
             <div class="playoff-header">Playoff Standings</div>
+            <div class="table-scroll">
             <table class="playoff-table">
                 <thead>
                     <tr>
@@ -270,6 +285,7 @@
                         <th class="col-score">Score</th>
                         <th class="col-fp">FP</th>
                         <th class="col-h2h">H2H</th>
+                        <th class="col-gpct">Game %</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -290,10 +306,12 @@
                         <td class="stat">{{ team_data.score }}</td>
                         <td class="stat">{{ team_data.fp }}</td>
                         <td class="stat">{{ team_data.h2h }}</td>
+                        <td class="stat">{% if team_data.gpct is not none %}{{ "%.1f"|format(team_data.gpct * 100) }}%{% else %}&mdash;{% endif %}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
+            </div>
         </div>
     </div>
 
