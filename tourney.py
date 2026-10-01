@@ -163,6 +163,14 @@ def get_tourney_list(teams,tourney_type):
     return [[team for div_teams in divisions for team in div_teams[2*g:2*g+2]]
             for g in range(4)]
 
+def subtype_of(tourney, all_tourneys):
+    """tourney.subtype, derived the way main.py sets it for seasons pickled
+    before subtype was saved: a week's tournaments are stored in group order."""
+    if hasattr(tourney, 'subtype'):
+        return tourney.subtype
+    same_week = [t for t in all_tourneys if t.week == tourney.week]
+    return get_tourney_subtype(tourney.type, same_week.index(tourney), tourney.team_list)
+
 def get_tourney_subtype(tourney_type, group_index, group_teams):
     if tourney_type == "Division":
         return group_teams[0].division

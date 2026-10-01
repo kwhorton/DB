@@ -3,6 +3,7 @@ import pickle
 from show_results import *
 from show_standings import *
 from league import H2H_WEEKS, TOURNEY_TYPES, FIRST_TOURNEY_WEEK
+from tourney import subtype_of
 
 # Load all tiers data
 with open("season_all_tiers.pkl", "rb") as f:
@@ -227,9 +228,15 @@ def wkschedule(week = None):
         tournaments = []
         for tourney in all_tourneys:
             if tourney.week == week_num:
-                # Listed best first: score, tourney wins, H2H match wins, then rating
+                # Played weeks list the bracket's actual seeds. Future weeks project
+                # them from what's known so far (score, tourney wins, H2H wins, rating),
+                # since the actual seeding would reveal results not yet played.
+                if show_results:
+                    seeded = tourney.team_list
+                else:
+                    seeded = [team for team, _ in ranked(tourney.team_list, n, rating_week)]
                 teams_info = []
-                for team, rating in ranked(tourney.team_list, n, rating_week):
+                for team in seeded:
                     team_ratings = get_week_rating(team, rating_week)
                     s = team.score[:n]
                     teams_info.append({
@@ -238,13 +245,15 @@ def wkschedule(week = None):
                         'division': team.division,
                         'place': division_place(team, teams, n, rating_week),
                         'ratings': team_ratings,
-                        'rating': rating,
+                        'rating': sum(team_ratings.values()) / 4,
                         'FP': s.count(21),
                         'H2H': s[:4].count(15)
                     })
 
                 tournaments.append({
                     'id': tourney.id,
+                    'type': getattr(tourney, 'type', None),
+                    'subtype': subtype_of(tourney, all_tourneys),
                     'teams_info': teams_info
                 })
 
@@ -259,24 +268,23 @@ def view_tournament(tournament_id):
     
     tourney = all_tourneys[tournament_id]
     current_tier = session.get('current_tier', 'Tier 1')
+    current_week = session.get('current_week', 1)
 
     tournament_type = getattr(tourney, 'type', None)
-    tournament_subtype = getattr(tourney, 'subtype', None)
+    tournament_subtype = subtype_of(tourney, all_tourneys)
     
-    # Prepare tournament data
+    # Seeds in bracket order, with each team's score and rating entering the
+    # week (limited to what's known as of current_week, as on the schedule page)
+    n, rating_week = snapshot(tourney.week, current_week)
     teams_info = {}
-    i = 1
-    for team in tourney.team_list:
-        
-        team_ratings = get_week_rating(team,tourney.week)
-        team_rating = 0.25*(team_ratings['Aim']+team_ratings['Speed']+team_ratings['Throw']+team_ratings['Hands'])
+    for seed, team in enumerate(tourney.team_list, start=1):
         teams_info[team.team_name] = {
-                           'seed': i,
-                           'score': sum(team.score[0:(tourney.week+1)]),
-                           'rating': round(team_rating,1)
-                          }
-        i+=1
+            'seed': seed,
+            'score': sum(team.score[:n]),
+            'rating': team_rating(team, rating_week)
+        }
     tournament_data = {
+        'year': tourney.year,
         'week': tourney.week,
         'tier': current_tier,
         'tournament_type': tournament_type,
