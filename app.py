@@ -6,6 +6,7 @@ import base64
 import pickle
 from show_results import *
 from show_standings import *
+from league import H2H_WEEKS, TOURNEY_TYPES, FIRST_TOURNEY_WEEK
 import os
 
 # Load all tiers data
@@ -117,9 +118,8 @@ def team_page(team_name):
         # Get schedule preview for this team
         team_schedule = []
         
-        # Get H2H matches (weeks 1, 1.5, 2, 2.5)
-        h2h_weeks = [1, 1.5, 2, 2.5]
-        for week in h2h_weeks:
+        # Get H2H matches
+        for week in H2H_WEEKS:
             week_matches = [m for m in schedule if m.week == week and 
                           (m.team1.team_name == team_name or m.team2.team_name == team_name)]
             if week_matches:
@@ -133,12 +133,8 @@ def team_page(team_name):
                     'home_away': home_away
                 })
         
-        # Get tournament schedule (weeks 3-16)
-        tourney_types = ['Random','Random','Division','Division','Score','Random',
-                        'Division','Division','Score','Random','Random','Score','Division','Division']
-        
-        for week_idx, tourney_type in enumerate(tourney_types):
-            week = week_idx + 3
+        # Get tournament schedule
+        for week, tourney_type in enumerate(TOURNEY_TYPES, start=FIRST_TOURNEY_WEEK):
             team_schedule.append({
                 'week': week,
                 'type': 'Tournament',
@@ -211,7 +207,7 @@ def wkschedule(week = None):
     #   rating_week = which all_stats entry to use for ratings
     n, rating_week = snapshot(week_num, current_week)
 
-    if week_num in [1, 1.5, 2, 2.5]:
+    if week_num in H2H_WEEKS:
         filtered_schedule = [match for match in schedule if match.week==week_num]
 
         for event in filtered_schedule:
@@ -236,8 +232,9 @@ def wkschedule(week = None):
         tournaments = []
         for tourney in all_tourneys:
             if tourney.week == week_num:
+                # Listed best first: score, tourney wins, H2H match wins, then rating
                 teams_info = []
-                for team in tourney.team_list:
+                for team, rating in ranked(tourney.team_list, n, rating_week):
                     team_ratings = get_week_rating(team, rating_week)
                     s = team.score[:n]
                     teams_info.append({
@@ -246,13 +243,10 @@ def wkschedule(week = None):
                         'division': team.division,
                         'place': division_place(team, teams, n, rating_week),
                         'ratings': team_ratings,
-                        'rating': sum(team_ratings.values()) / 4,
+                        'rating': rating,
                         'FP': s.count(21),
-                        'H2H': team.score[:min(4, n)].count(15)
+                        'H2H': s[:4].count(15)
                     })
-
-                # Score, tourney wins, H2H match wins, then rating
-                teams_info.sort(key=lambda x: (-x['score'], -x['FP'], -x['H2H'], -x['rating']))
 
                 tournaments.append({
                     'id': tourney.id,
@@ -363,125 +357,10 @@ def player_page(pid):
                          stats_history=stats_history)
 
 
-@app.route('/animate/match/<int:match_index>')
-@app.route('/animate/match/<int:match_index>/game/<int:game_index>')
-def animate_match(match_index, game_index=None):
-    """Animate a regular season match - shows all games in sequence"""
-    tier_data = get_current_tier_data()
-    schedule = tier_data['schedule']
-    
-    if match_index >= len(schedule):
-        return "Match not found", 404
-    
-    match = schedule[match_index]
-    
-    # Default to first game if not specified
-    if game_index is None:
-        game_index = 0
-    
-    # Get specific game
-    if not hasattr(match, 'games') or game_index >= len(match.games):
-        return "Game not found", 404
-    
-    game = match.games[game_index]
-    
-    # Get game log (attribute is 'log' not 'game_log')
-    game_log = []
-    if hasattr(game, 'log') and game.log:
-        game_log = game.log
-    
-    # Create player name lookup from both teams
-    player_names = {}
-    for player in match.team1.players:
-        if hasattr(player, 'name') and player.name:
-            player_names[player.pid] = player.name
-    for player in match.team2.players:
-        if hasattr(player, 'name') and player.name:
-            player_names[player.pid] = player.name
-    
-    # Get all roster player IDs
-    team1_roster = [p.pid for p in match.team1.players]
-    team2_roster = [p.pid for p in match.team2.players]
-    
-    # Calculate cumulative stats across ALL games up to and including current game
-    all_games_logs = []
-    for i in range(game_index + 1):
-        if i < len(match.games) and hasattr(match.games[i], 'log'):
-            all_games_logs.extend(match.games[i].log)
-    
-    # Calculate which set we're in by counting games
-    current_set = 0
-    games_counted = 0
-    game_in_set = 0
-    
-    for set_idx, set_result in enumerate(match.set_results):
-        games_in_this_set = set_result[0] + set_result[1]
-        if games_counted + games_in_this_set > game_index:
-            current_set = set_idx
-            game_in_set = game_index - games_counted + 1
-            break
-        games_counted += games_in_this_set
-    
-    # Calculate set scores (completed sets only)
-    current_set_scores = [0, 0]
-    for i in range(current_set):
-        if i < len(match.set_results):
-            if match.set_results[i][0] > match.set_results[i][1]:
-                current_set_scores[0] += 1
-            else:
-                current_set_scores[1] += 1
-    
-    # Calculate game score in current set BEFORE this game
-    current_game_scores = [0, 0]
-    set_start_game = sum(match.set_results[i][0] + match.set_results[i][1] for i in range(current_set))
-    for i in range(set_start_game, game_index):
-        if i < len(match.games):
-            winner = match.games[i].winner
-            if winner == 1:
-                current_game_scores[0] += 1
-            elif winner == 2:
-                current_game_scores[1] += 1
-    
-    match_info = {
-        'team1': match.team1.team_name,
-        'team2': match.team2.team_name,
-        'week': match.week,
-        'game_number': game_index + 1,
-        'total_games': len(match.games),
-        'current_set': current_set + 1,
-        'game_in_set': game_in_set,
-        'set_scores': current_set_scores,
-        'game_scores': current_game_scores,
-        'is_tournament': False,
-        'team1_roster': team1_roster,
-        'team2_roster': team2_roster
-    }
-    
-    return render_template('dodgeball_animation.html', 
-                         game_log=game_log,
-                         all_games_logs=all_games_logs,
-                         match_info=match_info,
-                         match_index=match_index,
-                         game_index=game_index,
-                         player_names=player_names)
+def render_match_animation(match, match_index, game_index, tournament_id=None):
+    """Render dodgeball_animation.html for one game of a match.
 
-
-@app.route('/animate/tournament/<int:tournament_id>/<int:match_index>')
-@app.route('/animate/tournament/<int:tournament_id>/<int:match_index>/game/<int:game_index>')
-def animate_tournament_match(tournament_id, match_index, game_index=None):
-    tier_data = get_current_tier_data()
-    all_tourneys = tier_data['all_tourneys']
-
-    if tournament_id >= len(all_tourneys):
-        return "Tournament not found", 404
-
-    tourney = all_tourneys[tournament_id]
-
-    if match_index >= len(tourney.matches) or not tourney.matches[match_index]:
-        return "Match not found", 404
-
-    match = tourney.matches[match_index]
-
+    tournament_id is None for regular season matches."""
     if game_index is None:
         game_index = 0
 
@@ -489,56 +368,38 @@ def animate_tournament_match(tournament_id, match_index, game_index=None):
         return "Game not found", 404
 
     game = match.games[game_index]
+    game_log = game.log if getattr(game, 'log', None) else []
 
-    game_log = []
-    if hasattr(game, 'log') and game.log:
-        game_log = game.log
+    players = match.team1.players + match.team2.players
+    player_names = {p.pid: p.name for p in players if getattr(p, 'name', None)}
 
-    player_names = {}
-    for player in match.team1.players:
-        if hasattr(player, 'name') and player.name:
-            player_names[player.pid] = player.name
-    for player in match.team2.players:
-        if hasattr(player, 'name') and player.name:
-            player_names[player.pid] = player.name
-
-    team1_roster = [p.pid for p in match.team1.players]
-    team2_roster = [p.pid for p in match.team2.players]
-
+    # Cumulative play logs across all games up to and including this one
     all_games_logs = []
-    for i in range(game_index + 1):
-        if i < len(match.games) and hasattr(match.games[i], 'log'):
-            all_games_logs.extend(match.games[i].log)
+    for g in match.games[:game_index + 1]:
+        all_games_logs.extend(getattr(g, 'log', []))
 
+    # Which set this game is in, and its position within that set
     current_set = 0
-    games_counted = 0
     game_in_set = 0
-
-    for set_idx, set_result in enumerate(match.set_results):
-        games_in_this_set = set_result[0] + set_result[1]
-        if games_counted + games_in_this_set > game_index:
+    games_counted = 0
+    for set_idx, (wins1, wins2) in enumerate(match.set_results):
+        if games_counted + wins1 + wins2 > game_index:
             current_set = set_idx
             game_in_set = game_index - games_counted + 1
             break
-        games_counted += games_in_this_set
+        games_counted += wins1 + wins2
 
+    # Sets won so far (completed sets only)
     current_set_scores = [0, 0]
-    for i in range(current_set):
-        if i < len(match.set_results):
-            if match.set_results[i][0] > match.set_results[i][1]:
-                current_set_scores[0] += 1
-            else:
-                current_set_scores[1] += 1
+    for wins1, wins2 in match.set_results[:current_set]:
+        current_set_scores[0 if wins1 > wins2 else 1] += 1
 
+    # Game score within the current set BEFORE this game
     current_game_scores = [0, 0]
-    set_start_game = sum(match.set_results[i][0] + match.set_results[i][1] for i in range(current_set))
-    for i in range(set_start_game, game_index):
-        if i < len(match.games):
-            winner = match.games[i].winner
-            if winner == 1:
-                current_game_scores[0] += 1
-            elif winner == 2:
-                current_game_scores[1] += 1
+    set_start_game = sum(w1 + w2 for w1, w2 in match.set_results[:current_set])
+    for g in match.games[set_start_game:game_index]:
+        if g.winner in (1, 2):
+            current_game_scores[g.winner - 1] += 1
 
     match_info = {
         'team1': match.team1.team_name,
@@ -550,9 +411,10 @@ def animate_tournament_match(tournament_id, match_index, game_index=None):
         'game_in_set': game_in_set,
         'set_scores': current_set_scores,
         'game_scores': current_game_scores,
-        'is_tournament': True,
-        'team1_roster': team1_roster,
-        'team2_roster': team2_roster
+        'is_tournament': tournament_id is not None,
+        'tournament': tournament_id,
+        'team1_roster': [p.pid for p in match.team1.players],
+        'team2_roster': [p.pid for p in match.team2.players]
     }
 
     return render_template('dodgeball_animation.html',
@@ -562,6 +424,35 @@ def animate_tournament_match(tournament_id, match_index, game_index=None):
                          match_index=match_index,
                          game_index=game_index,
                          player_names=player_names)
+
+
+@app.route('/animate/match/<int:match_index>')
+@app.route('/animate/match/<int:match_index>/game/<int:game_index>')
+def animate_match(match_index, game_index=None):
+    """Animate a regular season match - shows all games in sequence"""
+    schedule = get_current_tier_data()['schedule']
+
+    if match_index >= len(schedule):
+        return "Match not found", 404
+
+    return render_match_animation(schedule[match_index], match_index, game_index)
+
+
+@app.route('/animate/tournament/<int:tournament_id>/<int:match_index>')
+@app.route('/animate/tournament/<int:tournament_id>/<int:match_index>/game/<int:game_index>')
+def animate_tournament_match(tournament_id, match_index, game_index=None):
+    all_tourneys = get_current_tier_data()['all_tourneys']
+
+    if tournament_id >= len(all_tourneys):
+        return "Tournament not found", 404
+
+    tourney = all_tourneys[tournament_id]
+
+    if match_index >= len(tourney.matches) or not tourney.matches[match_index]:
+        return "Match not found", 404
+
+    return render_match_animation(tourney.matches[match_index], match_index, game_index,
+                                  tournament_id=tournament_id)
 
 
 if __name__ == "__main__":
