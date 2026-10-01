@@ -1,4 +1,5 @@
 import pandas as pd
+from league import H2H_WEEKS, TOURNEY_TYPES, FIRST_TOURNEY_WEEK
 
 def results(team_name,teams,schedule,all_tourneys,week):
     team_results = []
@@ -8,9 +9,6 @@ def results(team_name,teams,schedule,all_tourneys,week):
     else:
         end = (week>=3)*(week+1) + (week<3)*(2*week-2) + 1
         end = int(end)
-    tourney_types = ['Random','Random','Division','Division','Score','Random',
-                 'Division','Division','Score','Random','Random','Score','Division',
-                 'Division']
     teamobj = [team for team in teams if team.team_name == team_name]
     teamobj = teamobj[0]
     for w in range(end):
@@ -38,7 +36,7 @@ def results(team_name,teams,schedule,all_tourneys,week):
             else:
                 nth = "st"
             output = {'Week': w-1,
-                      'Event': tourney_types[w-4],
+                      'Event': TOURNEY_TYPES[w-4],
                       'Result': f"{int(8-teamobj.score[w]/3)}{nth}",
                       'Score': teamobj.score[w]}
             team_results.append(output)
@@ -73,12 +71,8 @@ def get_week_rating(team,week):
 def get_season_schedule(team_name, teams, schedule, all_tourneys):
     """Get the season schedule for a team (for Week 0 preview)"""
     schedule_data = []
-    tourney_types = ['Random','Random','Division','Division','Score','Random',
-                 'Division','Division','Score','Random','Random','Score','Division',
-                 'Division']
-    
-    # Get head-to-head matches (weeks 1, 1.5, 2, 2.5)
-    for week in [1, 1.5, 2, 2.5]:
+    # Get head-to-head matches
+    for week in H2H_WEEKS:
         team_match = [match1 for match1 in schedule if match1.week == week and 
                      (match1.team1.team_name == team_name or match1.team2.team_name == team_name)]
         if team_match:
@@ -91,10 +85,10 @@ def get_season_schedule(team_name, teams, schedule, all_tourneys):
                 'Type': 'Head-to-Head'
             })
     
-    # Add tournament weeks (weeks 3-16)
-    for week_idx, tourney_type in enumerate(tourney_types):
+    # Add tournament weeks
+    for week, tourney_type in enumerate(TOURNEY_TYPES, start=FIRST_TOURNEY_WEEK):
         schedule_data.append({
-            'Week': week_idx + 3,
+            'Week': week,
             'Event': f"{tourney_type} Tournament",
             'Type': 'Tournament'
         })

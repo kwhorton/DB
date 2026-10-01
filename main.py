@@ -4,6 +4,7 @@ from match import *
 from tourney import *
 from create_teams import *
 from build_schedule import *
+from league import H2H_WEEKS, TOURNEY_TYPES, FIRST_TOURNEY_WEEK
 import random
 import pandas as pd
 import pickle
@@ -28,8 +29,8 @@ for tier_name in tier_names:
     schedule = build_h2h_schedule(teams, year=2033)
     print(f"Schedule built: {len(schedule)} head-to-head matches")
     
-    # Run head-to-head matches for weeks 1, 1.5, 2, 2.5
-    for week in [1, 1.5, 2, 2.5]:
+    # Run head-to-head matches
+    for week in H2H_WEEKS:
         print(f"  Running Week {week} matches...")
         schedule1 = [match1 for match1 in schedule if match1.week == week]
         for match1 in schedule1:
@@ -39,22 +40,16 @@ for tier_name in tier_names:
     # Initialize tournament list
     all_tourneys = []
     
-    # Tournament types for weeks 3-16
-    tourney_types = ['Random', 'Random', 'Division', 'Division', 'Score', 'Random',
-                     'Division', 'Division', 'Score', 'Random', 'Random', 'Score', 
-                     'Division', 'Division']
-    
     # Run tournaments for weeks 3-16
-    for w in range(14):
-        week_num = w + 3
-        print(f"  Running Week {week_num} tournaments ({tourney_types[w]})...")
+    for week_num, tourney_type in enumerate(TOURNEY_TYPES, start=FIRST_TOURNEY_WEEK):
+        print(f"  Running Week {week_num} tournaments ({tourney_type})...")
         
-        teams_lists = get_tourney_list(teams, tourney_types[w])
+        teams_lists = get_tourney_list(teams, tourney_type)
         
         for i in range(4):
             tourney = Tournament(teams_lists[i], 2033, week_num)
-            tourney.type = tourney_types[w]
-            tourney.subtype = get_tourney_subtype(tourney_types[w], i, teams_lists[i])
+            tourney.type = tourney_type
+            tourney.subtype = get_tourney_subtype(tourney_type, i, teams_lists[i])
             tourney.run_tourney()
             all_tourneys.append(tourney)
             schedule.extend(tourney.matches)

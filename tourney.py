@@ -1,4 +1,5 @@
 from match import *
+from league import record_key
 import random
 
 class Tournament:
@@ -14,10 +15,7 @@ class Tournament:
 
     def run_tourney(self):
         
-        self.team_list.sort(key=lambda t: (
-            -sum(t.score),
-            -t.score.count(21),
-            -t.score[0:4].count(15)))
+        self.team_list.sort(key=lambda t: record_key(t.score))
         
         # Round 1
         #1 v 8
@@ -149,63 +147,21 @@ class Tournament:
 
 def get_tourney_list(teams,tourney_type):
 
-    teams_east = [team for team in teams if team.division == "East"]
-    teams_midwest = [team for team in teams if team.division == "Midwest"]
-    teams_south = [team for team in teams if team.division == "South"]
-    teams_west = [team for team in teams if team.division == "West"]
+    divisions = [[team for team in teams if team.division == div]
+                 for div in ["East", "Midwest", "South", "West"]]
 
-    #Random
+    if tourney_type == "Division":
+        return divisions
 
-    if tourney_type == "Random":
-        
-        random.shuffle(teams_east)
-        random.shuffle(teams_midwest)
-        random.shuffle(teams_south)
-        random.shuffle(teams_west)
+    # Random / Score: each group of 8 takes two teams from every division
+    for div_teams in divisions:
+        if tourney_type == "Random":
+            random.shuffle(div_teams)
+        elif tourney_type == "Score":
+            div_teams.sort(key=lambda t: record_key(t.score))
 
-        teams_list = [[teams_east[0],teams_east[1],teams_midwest[0],teams_midwest[1],teams_south[0],teams_south[1],teams_west[0],teams_west[1]],
-                      [teams_east[2],teams_east[3],teams_midwest[2],teams_midwest[3],teams_south[2],teams_south[3],teams_west[2],teams_west[3]],
-                      [teams_east[4],teams_east[5],teams_midwest[4],teams_midwest[5],teams_south[4],teams_south[5],teams_west[4],teams_west[5]],
-                      [teams_east[6],teams_east[7],teams_midwest[6],teams_midwest[7],teams_south[6],teams_south[7],teams_west[6],teams_west[7]]]
-
-
-    #Scores 
-
-    elif tourney_type == "Score":
-
-        teams_east.sort(key=lambda t: (
-            -sum(t.score),
-            -t.score.count(21),
-            -t.score[0:4].count(15)))
-        teams_midwest.sort(key=lambda t: (
-            -sum(t.score),
-            -t.score.count(21),
-            -t.score[0:4].count(15)))
-        teams_west.sort(key=lambda t: (
-            -sum(t.score),
-            -t.score.count(21),
-            -t.score[0:4].count(15)))
-        teams_south.sort(key=lambda t: (
-            -sum(t.score),
-            -t.score.count(21),
-            -t.score[0:4].count(15)))
-        
-        teams_list = [[teams_east[0],teams_east[1],teams_midwest[0],teams_midwest[1],teams_south[0],teams_south[1],teams_west[0],teams_west[1]],
-                      [teams_east[2],teams_east[3],teams_midwest[2],teams_midwest[3],teams_south[2],teams_south[3],teams_west[2],teams_west[3]],
-                      [teams_east[4],teams_east[5],teams_midwest[4],teams_midwest[5],teams_south[4],teams_south[5],teams_west[4],teams_west[5]],
-                      [teams_east[6],teams_east[7],teams_midwest[6],teams_midwest[7],teams_south[6],teams_south[7],teams_west[6],teams_west[7]]]
-
-
-
-    #Division
-
-    elif tourney_type == "Division":
-
-        teams_list = [teams_east,teams_midwest,teams_south,teams_west]
-
-    #teams_list = [item for sublist in teams_list for item in sublist]
-    
-    return teams_list 
+    return [[team for div_teams in divisions for team in div_teams[2*g:2*g+2]]
+            for g in range(4)]
 
 def get_tourney_subtype(tourney_type, group_index, group_teams):
     if tourney_type == "Division":

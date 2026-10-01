@@ -6,6 +6,7 @@ import base64
 import pickle
 from show_results import *
 from show_standings import *
+from league import H2H_WEEKS, TOURNEY_TYPES, FIRST_TOURNEY_WEEK
 import os
 
 # Load all tiers data
@@ -117,9 +118,8 @@ def team_page(team_name):
         # Get schedule preview for this team
         team_schedule = []
         
-        # Get H2H matches (weeks 1, 1.5, 2, 2.5)
-        h2h_weeks = [1, 1.5, 2, 2.5]
-        for week in h2h_weeks:
+        # Get H2H matches
+        for week in H2H_WEEKS:
             week_matches = [m for m in schedule if m.week == week and 
                           (m.team1.team_name == team_name or m.team2.team_name == team_name)]
             if week_matches:
@@ -133,12 +133,8 @@ def team_page(team_name):
                     'home_away': home_away
                 })
         
-        # Get tournament schedule (weeks 3-16)
-        tourney_types = ['Random','Random','Division','Division','Score','Random',
-                        'Division','Division','Score','Random','Random','Score','Division','Division']
-        
-        for week_idx, tourney_type in enumerate(tourney_types):
-            week = week_idx + 3
+        # Get tournament schedule
+        for week, tourney_type in enumerate(TOURNEY_TYPES, start=FIRST_TOURNEY_WEEK):
             team_schedule.append({
                 'week': week,
                 'type': 'Tournament',
@@ -211,7 +207,7 @@ def wkschedule(week = None):
     #   rating_week = which all_stats entry to use for ratings
     n, rating_week = snapshot(week_num, current_week)
 
-    if week_num in [1, 1.5, 2, 2.5]:
+    if week_num in H2H_WEEKS:
         filtered_schedule = [match for match in schedule if match.week==week_num]
 
         for event in filtered_schedule:
@@ -236,8 +232,9 @@ def wkschedule(week = None):
         tournaments = []
         for tourney in all_tourneys:
             if tourney.week == week_num:
+                # Listed best first: score, tourney wins, H2H match wins, then rating
                 teams_info = []
-                for team in tourney.team_list:
+                for team, rating in ranked(tourney.team_list, n, rating_week):
                     team_ratings = get_week_rating(team, rating_week)
                     s = team.score[:n]
                     teams_info.append({
@@ -246,13 +243,10 @@ def wkschedule(week = None):
                         'division': team.division,
                         'place': division_place(team, teams, n, rating_week),
                         'ratings': team_ratings,
-                        'rating': sum(team_ratings.values()) / 4,
+                        'rating': rating,
                         'FP': s.count(21),
-                        'H2H': team.score[:min(4, n)].count(15)
+                        'H2H': s[:4].count(15)
                     })
-
-                # Score, tourney wins, H2H match wins, then rating
-                teams_info.sort(key=lambda x: (-x['score'], -x['FP'], -x['H2H'], -x['rating']))
 
                 tournaments.append({
                     'id': tourney.id,

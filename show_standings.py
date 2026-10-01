@@ -1,8 +1,9 @@
 import pandas as pd
 from show_results import *
+from league import H2H_WEEKS, TOURNEY_TYPES, FIRST_TOURNEY_WEEK, record_key
 
 
-WEEKS = [1, 1.5, 2, 2.5] + list(range(3, 17))
+WEEKS = H2H_WEEKS + list(range(FIRST_TOURNEY_WEEK, FIRST_TOURNEY_WEEK + len(TOURNEY_TYPES)))
 
 def results_before(week):
     """Number of team.score entries from weeks strictly before `week`."""
@@ -24,13 +25,6 @@ def snapshot(week_num, current_week):
     next_wk = next(w for w in WEEKS if w > current_week)
     return results_through(current_week), next_wk
 
-def division_place(team, teams, n):
-    div = [t for t in teams if t.division == team.division]
-    div.sort(key=lambda t: (-sum(t.score[:n]),
-                            -t.score[:n].count(21),
-                            -t.score[:min(4, n)].count(15)))
-    return [t.team_name for t in div].index(team.team_name) + 1
-
 def team_rating(team, rating_week):
     r = get_week_rating(team, rating_week)
     return sum(r.values()) / 4
@@ -39,18 +33,16 @@ def rating_week_for(week):
     """Week 0 has no all_stats entry; Week 1's entry holds start-of-season attributes."""
     return week if week >= 1 else 1
 
-def standings_key(team, n, rating_week):
-    """Sort key: score, tourney wins (21s), H2H match wins (15s in first 4), rating."""
-    s = team.score[:n]
-    return (-sum(s),
-            -s.count(21),
-            -team.score[:min(4, n)].count(15),
-            -team_rating(team, rating_week))
+def ranked(teams, n, rating_week):
+    """[(team, rating)] best first: record_key on the first n score
+    entries (score, tourney wins, H2H match wins), then rating."""
+    rated = [(team, team_rating(team, rating_week)) for team in teams]
+    rated.sort(key=lambda tr: (*record_key(tr[0].score[:n]), -tr[1]))
+    return rated
 
 def division_place(team, teams, n, rating_week):
-    div = sorted((t for t in teams if t.division == team.division),
-                 key=lambda t: standings_key(t, n, rating_week))
-    return [t.team_name for t in div].index(team.team_name) + 1
+    div = ranked((t for t in teams if t.division == team.division), n, rating_week)
+    return [t.team_name for t, _ in div].index(team.team_name) + 1
 
 
 def standings(teams,schedule,all_tourneys,week):
@@ -59,21 +51,15 @@ def standings(teams,schedule,all_tourneys,week):
     rw = rating_week_for(week)     # Week 0 -> Week 1 entry (start of season)
 
     standings = []
-    # For week 0 (preseason), show no results 
-    for team in teams:
+    for team, rating in ranked(teams, n, rw):
         s = team.score[:n]
-        output = {'Team': team.team_name,
-                  'Division': team.division,
-                  'Rating': team_rating(team, rw),
-                  'Score': sum(s),
-                  'FP': s.count(21),
-                  'H2H': team.score[0:min(4,n)].count(15)
-                  }
-
-        standings.append(output)
-
-    # Sort by score, tourney wins, H2H match wins, then rating
-    standings = sorted(standings, key=lambda d: (-d['Score'], -d['FP'], -d['H2H'], -d['Rating']))
+        standings.append({'Team': team.team_name,
+                          'Division': team.division,
+                          'Rating': rating,
+                          'Score': sum(s),
+                          'FP': s.count(21),
+                          'H2H': s[:4].count(15)
+                          })
 
     df = pd.DataFrame(standings)
     df['Team'] = df['Team'].apply(lambda team_name: f'<a href="/team/{team_name}">{team_name}</a>')
@@ -87,25 +73,18 @@ def get_standings_by_division(teams, schedule, all_tourneys, week):
     n = results_through(week)      # number of score entries through this week
     rw = rating_week_for(week)     # Week 0 -> Week 1 entry (start of season)
 
-    standings = []
-    for team in teams:
+    # Group by division (teams stay in ranked order within each division)
+    divisions = {}
+    for team, rating in ranked(teams, n, rw):
         s = team.score[:n]
-        standings.append({
+        divisions.setdefault(team.division, []).append({
             'team_name': team.team_name,
             'division': team.division,
-            'rating': team_rating(team, rw),
+            'rating': rating,
             'score': sum(s),
             'fp': s.count(21),
-            'h2h': team.score[:min(4, n)].count(15)
+            'h2h': s[:4].count(15)
         })
-
-    # Score, tourney wins, H2H match wins, then rating
-    standings.sort(key=lambda d: (-d['score'], -d['fp'], -d['h2h'], -d['rating']))
-
-    # Group by division (teams stay in sorted order within each division)
-    divisions = {}
-    for team_standing in standings:
-        divisions.setdefault(team_standing['division'], []).append(team_standing)
 
     return dict(sorted(divisions.items()))
 
@@ -114,36 +93,24 @@ def get_playoff_standings(teams, schedule, all_tourneys, current_week):
     n = results_through(current_week)     # number of score entries through this week
     rw = rating_week_for(current_week)    # Week 0 -> Week 1 entry (start of season)
 
-    # Build each team's record once
-    records = []
-    for team in teams:
+    division_leaders = []
+    wildcards = []
+    seen_divisions = set()
+    for team, rating in ranked(teams, n, rw):
         s = team.score[:n]
-        records.append({
+        record = {
             'team': team,
             'division': team.division,
             'score': sum(s),
             'fp': s.count(21),
-            'h2h': team.score[:min(4, n)].count(15),
-            'rating': team_rating(team, rw),
-            'is_leader': False
-        })
+            'h2h': s[:4].count(15),
+            'rating': rating,
+            'is_leader': team.division not in seen_divisions
+        }
+        seen_divisions.add(team.division)
+        (division_leaders if record['is_leader'] else wildcards).append(record)
 
-    # Score, tourney wins, H2H match wins, then rating
-    sort_key = lambda r: (-r['score'], -r['fp'], -r['h2h'], -r['rating'])
-    records.sort(key=sort_key)
-    
-    # Sort teams within each division
-    division_leaders = []
-    seen_divisions = set()
-    for r in records:
-        if r['division'] not in seen_divisions:
-            seen_divisions.add(r['division'])
-            r['is_leader'] = True
-            division_leaders.append(r)
-
-    # Division leaders first (already in sorted order), then everyone else
-    wildcards = [r for r in records if not r['is_leader']]
-
+    # Division leaders first (in ranked order), then everyone else
     return division_leaders + wildcards
 
 
