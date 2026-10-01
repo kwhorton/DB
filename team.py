@@ -12,10 +12,3 @@ class Team:
         for player in self.players:
             team_scores += player.get_average_score()
         self.rating = team_scores/len(self.players)
-        
-
-    def get_team_rating_week(self, week):
-        team_scores = 0
-        for player in self.players:
-            team_scores += player.get_average_score_week(week)
-        return team_scores/len(self.players)

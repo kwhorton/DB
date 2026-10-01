@@ -5,8 +5,6 @@ from tourney import *
 from create_teams import *
 from build_schedule import *
 from league import H2H_WEEKS, TOURNEY_TYPES, FIRST_TOURNEY_WEEK
-import random
-import pandas as pd
 import pickle
 
 

@@ -45,29 +45,6 @@ def division_place(team, teams, n, rating_week):
     return [t.team_name for t, _ in div].index(team.team_name) + 1
 
 
-def standings(teams,schedule,all_tourneys,week):
-
-    n = results_through(week)      # number of score entries through this week
-    rw = rating_week_for(week)     # Week 0 -> Week 1 entry (start of season)
-
-    standings = []
-    for team, rating in ranked(teams, n, rw):
-        s = team.score[:n]
-        standings.append({'Team': team.team_name,
-                          'Division': team.division,
-                          'Rating': rating,
-                          'Score': sum(s),
-                          'FP': s.count(21),
-                          'H2H': s[:4].count(15)
-                          })
-
-    df = pd.DataFrame(standings)
-    df['Team'] = df['Team'].apply(lambda team_name: f'<a href="/team/{team_name}">{team_name}</a>')
-    standings_html = df.to_html(escape = False,index=False)
-
-    return standings_html
-
-        
 def get_standings_by_division(teams, schedule, all_tourneys, week):
     """Generate standings organized by division"""
     n = results_through(week)      # number of score entries through this week
