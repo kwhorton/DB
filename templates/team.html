@@ -1,16 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ team.team_name }}</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
+{% extends "base.html" %}
 
+{% block title %}{{ team.team_name }}{% endblock %}
+
+{% block head %}
+    <style>
         .team-container {
             max-width: 1200px;
             margin: 0 auto;
@@ -266,14 +259,10 @@
             border: none;
         }
     </style>
-</head>
-<body>
+{% endblock %}
+
+{% block content %}
     <div class="team-container">
-        {% extends "base.html" %}
-
-        {% block title %}{{ team.team_name }}{% endblock %}
-
-        {% block content %}
         <div class="back-button">
             <a href="/">← Back to Home</a>
         </div>
@@ -376,5 +365,3 @@
         </div>
     </div>
     {% endblock %}
-</body>
-</html>
