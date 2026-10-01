@@ -22,9 +22,17 @@ class Player:
         average_score = 0.25*(self.aim + self.speed + self.throw + self.hands)
         return average_score
 
+    def get_start_stats(self):
+        """Start-of-season attributes. Seasons pickled before start_stats was
+        added fall back to the Week 1 all_stats entry, which holds the same values."""
+        if hasattr(self, 'start_stats'):
+            return self.start_stats
+        week1 = next(stats for stats in self.all_stats if stats['Week'] == 1)
+        return {k: week1[k] for k in ('Aim', 'Speed', 'Throw', 'Hands')}
+
     def get_average_score_week(self,week):
         if week == 0:
-            s = self.start_stats
+            s = self.get_start_stats()
             return 0.25*(s['Aim']+s['Speed']+s['Throw']+s['Hands'])
         x = [(stats['Aim'],stats['Speed'],stats['Throw'],stats['Hands']) for stats in self.all_stats if stats['Week']==week]
         return 0.25*sum(x[0])

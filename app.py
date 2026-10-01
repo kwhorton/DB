@@ -103,7 +103,7 @@ def team_page(team_name):
         players = []
         for player in team.players:
             # Use initial stats (aimmax, speedmax, etc.)
-            s = player.start_stats
+            s = player.get_start_stats()
             players.append({
                 'pid': player.pid,
                 'name': player.name,
