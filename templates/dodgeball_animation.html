@@ -340,9 +340,9 @@
 <body>
     <div class="back-button">
         {% if match_info.is_tournament %}
-        <a href="{{ url_for('view_tournament', tournament_id=match_info.tournament) }}">Ã¢â€ Â Back to Tournament</a>
+        <a href="{{ url_for('view_tournament', tournament_id=match_info.tournament) }}">← Back to Tournament</a>
         {% else %}
-        <a href="{{ url_for('wkschedule', week=match_info.week) }}">Ã¢â€ Â Back to Week {{ match_info.week }}</a>
+        <a href="{{ url_for('wkschedule', week=match_info.week) }}">← Back to Week {{ match_info.week }}</a>
         {% endif %}
     </div>
 
@@ -391,11 +391,11 @@
     <div class="game-navigation">
         {% if match_info.is_tournament %}
         <button class="nav-button next-game-btn" onclick="window.location.href='{{ url_for('animate_tournament_match', tournament_id=match_info.tournament, match_index=match_index, game_index=game_index+1) }}'">
-            Next Game Ã¢â€ â€™
+            Next Game →
         </button>
         {% else %}
         <button class="nav-button next-game-btn" onclick="window.location.href='{{ url_for('animate_match', match_index=match_index, game_index=game_index+1) }}'">
-            Next Game Ã¢â€ â€™
+            Next Game →
         </button>
         {% endif %}
     </div>
@@ -922,7 +922,7 @@
                 // Show match complete message
                 const nextGameBtn = document.querySelector('.next-game-btn');
                 if (nextGameBtn) {
-                    nextGameBtn.textContent = 'Match Complete! Ã¢Å“â€œ';
+                    nextGameBtn.textContent = 'Match Complete! ✓';
                     nextGameBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
                     nextGameBtn.style.cursor = 'default';
                     nextGameBtn.onclick = null;
