@@ -115,6 +115,9 @@ class Match:
                     self.team2.score.append(15)
                     self.team1.score.append(5*match_score[0])
 
+            self.team1.games.append(game_record(self.team1, [self]))
+            self.team2.games.append(game_record(self.team2, [self]))
+
             # Remove home field advantage
 
             for player in self.team2.players:
@@ -194,3 +197,20 @@ class Match:
             return self.team1, self.team2
         else:
             return self.team2, self.team1
+
+
+def game_record(team, matches):
+    """(games won, games played) by team across the given matches."""
+    won = played = 0
+    for m in matches:
+        if m is None:
+            continue
+        if team is m.team1:
+            side = 1
+        elif team is m.team2:
+            side = 2
+        else:
+            continue
+        played += len(m.games)
+        won += sum(1 for g in m.games if g.winner == side)
+    return won, played

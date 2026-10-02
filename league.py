@@ -12,7 +12,16 @@ TOURNEY_TYPES = ['Random', 'Random', 'Division', 'Division', 'Score', 'Random',
 FIRST_TOURNEY_WEEK = 3
 
 
-def record_key(scores):
-    """Sort key for a list of score entries, best first: total score,
-    tournament wins (21s), then H2H match wins (15s in the first 4 entries)."""
-    return (-sum(scores), -scores.count(21), -scores[:4].count(15))
+def game_pct(games):
+    """Share of games won from a list of (won, played) pairs; 0 if none played."""
+    won = sum(w for w, _ in games)
+    played = sum(p for _, p in games)
+    return won / played if played else 0
+
+
+def record_key(scores, games):
+    """Sort key for a team's score entries and the matching (won, played) game
+    records, best first: total score, tournament wins (21s), H2H match wins
+    (15s in the first 4 entries), then game win percentage. Rating is never
+    a tiebreaker."""
+    return (-sum(scores), -scores.count(21), -scores[:4].count(15), -game_pct(games))

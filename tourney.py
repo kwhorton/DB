@@ -15,7 +15,7 @@ class Tournament:
 
     def run_tourney(self):
         
-        self.team_list.sort(key=lambda t: record_key(t.score))
+        self.team_list.sort(key=lambda t: record_key(t.score, t.games))
         
         # Round 1
         #1 v 8
@@ -144,6 +144,10 @@ class Tournament:
         self.finish_order[6].score.append(3)
         self.finish_order[7].score.append(0)
 
+        # This week's game record, alongside the score entry just added
+        for team in self.team_list:
+            team.games.append(game_record(team, self.matches))
+
 
 def get_tourney_list(teams,tourney_type):
 
@@ -158,10 +162,25 @@ def get_tourney_list(teams,tourney_type):
         if tourney_type == "Random":
             random.shuffle(div_teams)
         elif tourney_type == "Score":
-            div_teams.sort(key=lambda t: record_key(t.score))
+            div_teams.sort(key=lambda t: record_key(t.score, t.games))
 
     return [[team for div_teams in divisions for team in div_teams[2*g:2*g+2]]
             for g in range(4)]
+
+def backfill_game_records(teams, schedule, all_tourneys):
+    """Rebuild team.games for seasons pickled before it was saved: one
+    (won, played) pair per score entry, i.e. each H2H match in week order,
+    then each week's tournament."""
+    for team in teams:
+        if hasattr(team, 'games'):
+            continue
+        h2h = sorted((m for m in schedule
+                      if m.match_type == "H" and team in (m.team1, m.team2)),
+                     key=lambda m: m.week)
+        tourneys = sorted((t for t in all_tourneys if team in t.team_list),
+                          key=lambda t: t.week)
+        team.games = ([game_record(team, [m]) for m in h2h] +
+                      [game_record(team, t.matches) for t in tourneys])
 
 def subtype_of(tourney, all_tourneys):
     """tourney.subtype, derived the way main.py sets it for seasons pickled

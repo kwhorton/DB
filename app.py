@@ -3,11 +3,15 @@ import pickle
 from show_results import *
 from show_standings import *
 from league import H2H_WEEKS, TOURNEY_TYPES, FIRST_TOURNEY_WEEK
-from tourney import subtype_of
+from tourney import subtype_of, backfill_game_records
 
 # Load all tiers data
 with open("season_all_tiers.pkl", "rb") as f:
     all_tiers_data = pickle.load(f)
+
+# Seasons saved before game records were kept get them rebuilt from their matches
+for tier_data in all_tiers_data.values():
+    backfill_game_records(tier_data['teams'], tier_data['schedule'], tier_data['all_tourneys'])
 
 # Available tiers
 AVAILABLE_TIERS = ['Tier 1', 'Tier 2', 'Tier 3', 'Tier 4']
@@ -229,7 +233,7 @@ def wkschedule(week = None):
         for tourney in all_tourneys:
             if tourney.week == week_num:
                 # Played weeks list the bracket's actual seeds. Future weeks project
-                # them from what's known so far (score, tourney wins, H2H wins, rating),
+                # them from what's known so far (score, tourney wins, H2H wins, game %),
                 # since the actual seeding would reveal results not yet played.
                 if show_results:
                     seeded = tourney.team_list
