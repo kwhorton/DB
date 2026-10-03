@@ -9,6 +9,7 @@ def results(team_name,teams,schedule,all_tourneys,week):
     else:
         end = (week>=3)*(week+1) + (week<3)*(2*week-2) + 1
         end = int(end)
+        end = min(end, len(teams[0].score))
     teamobj = [team for team in teams if team.team_name == team_name]
     teamobj = teamobj[0]
     for w in range(end):
