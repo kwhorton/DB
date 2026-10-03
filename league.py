@@ -13,6 +13,7 @@ FIRST_TOURNEY_WEEK = 3
 
 # Playoff rounds 1-3, the weeks after the last tournament week
 PLAYOFF_WEEKS = [17, 18, 19]
+PLAYOFF_ROUND_NAMES = ['Playoffs Round 1', 'Playoffs Round 2', 'Final Four']
 
 
 def game_pct(games):

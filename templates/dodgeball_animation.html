@@ -339,7 +339,9 @@
 </head>
 <body>
     <div class="back-button">
-        {% if match_info.is_tournament %}
+        {% if match_info.playoff_round %}
+        <a href="{{ url_for('playoffs_page') }}">← Back to Playoffs</a>
+        {% elif match_info.is_tournament %}
         <a href="{{ url_for('view_tournament', tournament_id=match_info.tournament) }}">← Back to Tournament</a>
         {% else %}
         <a href="{{ url_for('wkschedule', week=match_info.week) }}">← Back to Week {{ match_info.week }}</a>
@@ -389,7 +391,11 @@
     
     <!-- Always show Next Game button -->
     <div class="game-navigation">
-        {% if match_info.is_tournament %}
+        {% if match_info.playoff_round %}
+        <button class="nav-button next-game-btn" onclick="window.location.href='{{ url_for('animate_playoff_match', round_num=match_info.playoff_round, match_index=match_index, game_index=game_index+1) }}'">
+            Next Game →
+        </button>
+        {% elif match_info.is_tournament %}
         <button class="nav-button next-game-btn" onclick="window.location.href='{{ url_for('animate_tournament_match', tournament_id=match_info.tournament, match_index=match_index, game_index=game_index+1) }}'">
             Next Game →
         </button>
