@@ -4,6 +4,7 @@ from match import *
 from tourney import *
 from create_teams import *
 from build_schedule import *
+from playoffs import run_playoffs
 from league import H2H_WEEKS, TOURNEY_TYPES, FIRST_TOURNEY_WEEK
 import pickle
 
@@ -60,12 +61,19 @@ for tier_name in tier_names:
     # Assign IDs to tournaments
     for idx, tourney in enumerate(all_tourneys):
         tourney.id = idx
-    
+
+    # Playoffs (kept apart from the regular-season schedule and tournaments)
+    playoff_seeds, playoff_rounds = run_playoffs(teams, 2033)
+    champion = playoff_rounds[-1].finish_order[0]
+    print(f"  Playoffs: {len(playoff_seeds)} teams, champion {champion.team_name}")
+
     # Store this tier's data
     all_tiers_data[tier_name] = {
         'teams': teams,
         'schedule': schedule,
-        'all_tourneys': all_tourneys
+        'all_tourneys': all_tourneys,
+        'playoff_seeds': playoff_seeds,
+        'playoff_rounds': playoff_rounds
     }
 
 # Save all data to pickle file
