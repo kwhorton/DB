@@ -1,5 +1,6 @@
 import pandas as pd
 from show_results import *
+from playoffs import playoff_seeds
 from league import H2H_WEEKS, TOURNEY_TYPES, FIRST_TOURNEY_WEEK, record_key, game_pct
 
 
@@ -73,16 +74,17 @@ def get_standings_by_division(teams, schedule, all_tourneys, week):
     return dict(sorted(divisions.items()))
 
 def get_playoff_standings(teams, schedule, all_tourneys, current_week):
-    """Calculate playoff standings with division leaders and wildcards"""
+    """Playoff picture: the 12 seeds in seed order (division leaders plus the
+    next 8, all ranked by record), then everyone else in ranked order."""
     n = results_through(current_week)     # number of score entries through this week
     rw = rating_week_for(current_week)    # Week 0 -> Week 1 entry (start of season)
 
-    division_leaders = []
-    wildcards = []
+    seeds = playoff_seeds(teams, n)
+    records = []
     seen_divisions = set()
     for team, rating in ranked(teams, n, rw):
         s = team.score[:n]
-        record = {
+        records.append({
             'team': team,
             'division': team.division,
             'score': sum(s),
@@ -90,13 +92,13 @@ def get_playoff_standings(teams, schedule, all_tourneys, current_week):
             'h2h': s[:4].count(15),
             'gpct': game_pct_display(team, n),
             'rating': rating,
-            'is_leader': team.division not in seen_divisions
-        }
+            'is_leader': team.division not in seen_divisions,
+            'has_bye': team in seeds[:4]
+        })
         seen_divisions.add(team.division)
-        (division_leaders if record['is_leader'] else wildcards).append(record)
 
-    # Division leaders first (in ranked order), then everyone else
-    return division_leaders + wildcards
+    seed_of = {team: i for i, team in enumerate(seeds)}
+    return sorted(records, key=lambda r: seed_of.get(r['team'], len(seeds)))
 
 
 def get_player_ranks(teams,week):

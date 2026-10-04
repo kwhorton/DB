@@ -1,0 +1,381 @@
+{% extends "base.html" %}
+
+{% block title %}Playoffs - {{ current_tier }}{% endblock %}
+
+{% block head %}
+    <style>
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+
+        .champion-banner {
+            max-width: 800px;
+            margin: 0 auto 30px;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            color: white;
+            background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .champion-banner .label {
+            font-size: 13px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.9;
+        }
+
+        .champion-banner .name {
+            font-size: 30px;
+            font-weight: bold;
+            margin-top: 6px;
+        }
+
+        .champion-banner a {
+            color: white;
+            text-decoration: none;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin: 0 auto 30px;
+        }
+
+        .seeds-card {
+            max-width: 800px;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px 20px;
+            font-size: 20px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .card-header .week {
+            font-size: 13px;
+            font-weight: normal;
+            opacity: 0.9;
+        }
+
+        .final-header {
+            background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        .table-scroll {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #f8f9fa;
+            padding: 10px 12px;
+            text-align: left;
+            color: #555;
+            border-bottom: 2px solid #ddd;
+            font-size: 14px;
+        }
+
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        tr.bye-line td {
+            border-bottom: 3px solid #667eea;
+        }
+
+        a.team-link {
+            color: #333;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        a.team-link:hover {
+            color: #667eea;
+        }
+
+        .badge {
+            display: inline-block;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+
+        .badge-div { background: #4CAF50; }
+        .badge-bye { background: #667eea; }
+
+        .seed {
+            color: #999;
+            font-size: 12px;
+            margin-right: 4px;
+        }
+
+        .bracket {
+            display: flex;
+            gap: 16px;
+            overflow-x: auto;
+            padding-bottom: 6px;
+        }
+
+        .stage {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            min-width: 190px;
+        }
+
+        .stage-title {
+            text-align: center;
+            font-weight: bold;
+            color: #555;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .match {
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            margin: 6px 0;
+            overflow: hidden;
+        }
+
+        .match:hover {
+            border-color: #667eea;
+        }
+
+        .match-team {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 7px 10px;
+            font-size: 14px;
+        }
+
+        .match-team + .match-team {
+            border-top: 1px solid #eee;
+        }
+
+        .match-team.winner {
+            background: #eef7ee;
+            font-weight: bold;
+        }
+
+        .match-team .score {
+            font-weight: bold;
+        }
+
+        .watch {
+            display: block;
+            text-align: center;
+            font-size: 11px;
+            padding: 4px;
+            background: #f8f9fa;
+            border-top: 1px solid #eee;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .watch:hover {
+            background: #eef0fd;
+        }
+
+        .summary {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+            font-size: 14px;
+        }
+
+        .summary h4 {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #555;
+            margin-bottom: 6px;
+        }
+
+        .summary ol, .summary ul {
+            padding-left: 20px;
+            line-height: 1.6;
+        }
+
+        .pending {
+            color: #888;
+            font-style: italic;
+        }
+
+        .field {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .field span {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 13px;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<h1>Playoffs</h1>
+<div class="subtitle">
+    {{ current_tier }} &middot; Division winners and the next 8 teams qualify; the top 4 seeds get byes
+</div>
+
+{% if champion %}
+<div class="champion-banner">
+    <div class="label">Champion</div>
+    <div class="name"><a href="/team/{{ champion.team_name }}">{{ champion.team_name }}</a></div>
+</div>
+{% endif %}
+
+<div class="card seeds-card">
+    <div class="card-header">
+        <span>Seeds</span>
+        <span class="week">{% if projected %}Projected as of {% if current_week == 0 %}preseason{% else %}Week {{ current_week }}{% endif %}{% else %}Final regular-season standings{% endif %}</span>
+    </div>
+    <div class="table-scroll">
+    <table>
+        <thead>
+            <tr>
+                <th>Seed</th>
+                <th>Team</th>
+                <th>Division</th>
+                <th>Score</th>
+                <th>Rating</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in seeds %}
+            <tr {% if s.seed == 4 %}class="bye-line"{% endif %}>
+                <td>{{ s.seed }}</td>
+                <td>
+                    <a class="team-link" href="/team/{{ s.team_name }}">{{ s.team_name }}</a>
+                    {% if s.is_leader %}<span class="badge badge-div">DIV</span>{% endif %}
+                    {% if s.has_bye %}<span class="badge badge-bye">BYE</span>{% endif %}
+                </td>
+                <td>{{ s.division }}</td>
+                <td>{{ s.score }}</td>
+                <td>{{ "%.2f"|format(s.rating) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+
+{% if not has_playoffs %}
+<p class="pending" style="text-align: center;">This season was simulated without playoffs. Rerun main.py to play them.</p>
+{% else %}
+{% for rnd in rounds %}
+<div class="card">
+    <div class="card-header {% if loop.last %}final-header{% endif %}">
+        <span>{{ rnd.name }}</span>
+        <span class="week">Week {{ rnd.week }}</span>
+    </div>
+    <div class="card-body">
+        {% if rnd.played %}
+        <div class="bracket">
+            {% for stage in rnd.stages %}
+            <div class="stage">
+                <div class="stage-title">{{ stage.label }}</div>
+                {% for m in stage.matches %}
+                <div class="match">
+                    <div class="match-team {% if m.winner == 1 %}winner{% endif %}">
+                        <span><span class="seed">{{ m.team1.seed }}</span><a class="team-link" href="/team/{{ m.team1.team_name }}">{{ m.team1.team_name }}</a></span>
+                        <span class="score">{{ m.score1 }}</span>
+                    </div>
+                    <div class="match-team {% if m.winner == 2 %}winner{% endif %}">
+                        <span><span class="seed">{{ m.team2.seed }}</span><a class="team-link" href="/team/{{ m.team2.team_name }}">{{ m.team2.team_name }}</a></span>
+                        <span class="score">{{ m.score2 }}</span>
+                    </div>
+                    <a class="watch" href="{{ url_for('animate_playoff_match', round_num=rnd.num, match_index=m.index) }}">Watch</a>
+                </div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="summary">
+            {% if rnd.finish_order %}
+            <div>
+                <h4>Final standings</h4>
+                <ol>
+                    {% for t in rnd.finish_order %}
+                    <li><span class="seed">({{ t.seed }})</span><a class="team-link" href="/team/{{ t.team_name }}">{{ t.team_name }}</a></li>
+                    {% endfor %}
+                </ol>
+            </div>
+            {% else %}
+            <div>
+                <h4>Advance</h4>
+                <ul>
+                    {% for t in rnd.advancers %}
+                    <li><span class="seed">({{ t.seed }})</span><a class="team-link" href="/team/{{ t.team_name }}">{{ t.team_name }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div>
+                <h4>Eliminated</h4>
+                <ul>
+                    {% for t in rnd.eliminated %}
+                    <li><span class="seed">({{ t.seed }})</span><a class="team-link" href="/team/{{ t.team_name }}">{{ t.team_name }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+        {% else %}
+        <div class="pending">To be played in Week {{ rnd.week }}.</div>
+        {% if rnd.field %}
+        <div class="field">
+            {% for t in rnd.field %}
+            <span><span class="seed">{{ t.seed }}</span>{{ t.team_name }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+{% endblock %}
