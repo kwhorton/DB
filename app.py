@@ -2,8 +2,10 @@ from flask import Flask, render_template, request, session
 import pickle
 from show_results import *
 from show_standings import *
-from league import H2H_WEEKS, TOURNEY_TYPES, FIRST_TOURNEY_WEEK
+from itertools import groupby
+from league import H2H_WEEKS, TOURNEY_TYPES, FIRST_TOURNEY_WEEK, PLAYOFF_WEEKS, PLAYOFF_ROUND_NAMES
 from tourney import subtype_of, backfill_game_records
+from playoffs import playoff_seeds
 
 # Load all tiers data
 with open("season_all_tiers.pkl", "rb") as f:
@@ -364,10 +366,11 @@ def player_page(pid):
                          stats_history=stats_history)
 
 
-def render_match_animation(match, match_index, game_index, tournament_id=None):
+def render_match_animation(match, match_index, game_index, tournament_id=None, playoff_round=None):
     """Render dodgeball_animation.html for one game of a match.
 
-    tournament_id is None for regular season matches."""
+    tournament_id and playoff_round are None for regular season matches;
+    playoff matches set playoff_round (1-3) instead of tournament_id."""
     if game_index is None:
         game_index = 0
 
@@ -418,8 +421,9 @@ def render_match_animation(match, match_index, game_index, tournament_id=None):
         'game_in_set': game_in_set,
         'set_scores': current_set_scores,
         'game_scores': current_game_scores,
-        'is_tournament': tournament_id is not None,
+        'is_tournament': tournament_id is not None or playoff_round is not None,
         'tournament': tournament_id,
+        'playoff_round': playoff_round,
         'team1_roster': [p.pid for p in match.team1.players],
         'team2_roster': [p.pid for p in match.team2.players]
     }
@@ -460,6 +464,104 @@ def animate_tournament_match(tournament_id, match_index, game_index=None):
 
     return render_match_animation(tourney.matches[match_index], match_index, game_index,
                                   tournament_id=tournament_id)
+
+
+@app.route('/animate/playoffs/<int:round_num>/<int:match_index>')
+@app.route('/animate/playoffs/<int:round_num>/<int:match_index>/game/<int:game_index>')
+def animate_playoff_match(round_num, match_index, game_index=None):
+    rounds = get_current_tier_data().get('playoff_rounds', [])
+
+    if not 1 <= round_num <= len(rounds):
+        return "Playoff round not found", 404
+
+    matches = rounds[round_num - 1].matches
+    if match_index >= len(matches):
+        return "Match not found", 404
+
+    return render_match_animation(matches[match_index], match_index, game_index,
+                                  playoff_round=round_num)
+
+
+@app.route('/playoffs')
+def playoffs_page():
+    current_week = session.get('current_week', 1)
+    tier_data = get_current_tier_data()
+    teams = tier_data['teams']
+    rounds = tier_data.get('playoff_rounds', [])
+    last_regular_week = FIRST_TOURNEY_WEEK + len(TOURNEY_TYPES) - 1
+
+    # Seeds as of current_week; projected until the regular season is over.
+    # Ratings are as of current_week, but no later than the end of the season
+    # for seasons simulated without playoffs (no playoff-week player stats).
+    n = results_through(min(current_week, last_regular_week))
+    rw = rating_week_for(current_week if rounds else min(current_week, last_regular_week))
+    seeds = playoff_seeds(teams, n)
+    seed_of = {team: i for i, team in enumerate(seeds, start=1)}
+    leaders = set()
+    seen_divisions = set()
+    for team, _ in ranked(teams, n, rw):
+        if team.division not in seen_divisions:
+            leaders.add(team)
+        seen_divisions.add(team.division)
+
+    seed_rows = [{
+        'seed': seed,
+        'team_name': team.team_name,
+        'division': team.division,
+        'score': sum(team.score[:n]),
+        'rating': team_rating(team, rw),
+        'is_leader': team in leaders,
+        'has_bye': seed <= 4
+    } for seed, team in enumerate(seeds, start=1)]
+
+    def entry(team):
+        return {'seed': seed_of[team], 'team_name': team.team_name}
+
+    round_data = []
+    field_known = current_week >= last_regular_week
+    for round_num, (name, week) in enumerate(zip(PLAYOFF_ROUND_NAMES, PLAYOFF_WEEKS), start=1):
+        rnd = rounds[round_num - 1] if round_num <= len(rounds) else None
+        played = rnd is not None and week <= current_week
+        data = {
+            'num': round_num,
+            'name': name,
+            'week': week,
+            'played': played,
+            'field': [entry(t) for t in rnd.team_list] if rnd and field_known else None,
+            'stages': [],
+            'advancers': [],
+            'eliminated': [],
+            'finish_order': []
+        }
+        if played:
+            matches = [{
+                'index': i,
+                'label': label,
+                'team1': entry(m.team1),
+                'team2': entry(m.team2),
+                'score1': m.match_score[0],
+                'score2': m.match_score[1],
+                'winner': m.winner
+            } for i, (m, label) in enumerate(zip(rnd.matches, rnd.labels))]
+            # Consecutive matches of the same stage form a bracket column
+            data['stages'] = [{'label': label, 'matches': list(group)}
+                              for label, group in groupby(matches, key=lambda m: m['label'])]
+            data['advancers'] = [entry(t) for t in sorted(rnd.advancers, key=seed_of.get)]
+            data['eliminated'] = [entry(t) for t in rnd.team_list
+                                  if t not in rnd.advancers and rnd.advancers]
+            data['finish_order'] = [entry(t) for t in rnd.finish_order]
+        # The next round's field is set once this one has been played
+        field_known = played
+        round_data.append(data)
+
+    champion = round_data[-1]['finish_order'][0] if round_data[-1]['finish_order'] else None
+
+    return render_template('playoffs.html',
+                           seeds=seed_rows,
+                           projected=current_week < last_regular_week,
+                           has_playoffs=bool(rounds),
+                           rounds=round_data,
+                           champion=champion)
 
 
 if __name__ == "__main__":
