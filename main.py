@@ -65,7 +65,7 @@ for tier_name in tier_names:
     # Playoffs (kept apart from the regular-season schedule and tournaments)
     playoff_seeds, playoff_rounds = run_playoffs(teams, 2033)
     champion = playoff_rounds[-1].finish_order[0]
-    print(f"  Playoffs: {len(playoff_seeds)} teams, champion {champion.team_name}")
+    print(f"  Playoffs: {len(playoff_seeds)} teams")
 
     # Store this tier's data
     all_tiers_data[tier_name] = {
