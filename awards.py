@@ -35,6 +35,28 @@ HOT_WEEKS = 3
 
 KINDS = ('overall', 'offense', 'defense')
 
+# Rate stats only rank players who played at least this share of their
+# team's games, so bench players can't lead on a handful of throws
+QUALIFY_SHARE = 0.4
+
+# Stat leader categories: (key, label, group, display format, needs to qualify)
+STAT_CATEGORIES = [
+    ('hits',          'Hits',            'Offense', 'int',    False),
+    ('hits_per_game', 'Hits per Game',   'Offense', 'dec',    True),
+    ('hit_rate',      'Hit Rate',        'Offense', 'pct',    True),
+    ('accuracy',      'Accuracy',        'Offense', 'pct',    True),
+    ('catches',       'Catches',         'Defense', 'int',    False),
+    ('catch_rate',    'Catch Rate',      'Defense', 'pct',    True),
+    ('dodge_rate',    'Dodge Rate',      'Defense', 'pct',    True),
+    ('survival_rate', 'Survival Rate',   'Defense', 'pct',    True),
+    ('rating',        'Overall Rating',  'Ratings', 'rating', False),
+    ('aim',           'Aim',             'Ratings', 'rating', False),
+    ('speed',         'Speed',           'Ratings', 'rating', False),
+    ('throw',         'Throw',           'Ratings', 'rating', False),
+    ('hands',         'Hands',           'Ratings', 'rating', False),
+    ('improvement',   'Most Improved',   'Ratings', 'signed', False),
+]
+
 
 @dataclass
 class Impact:
@@ -82,6 +104,10 @@ def match_impact(match):
     return sum_impacts(game_impact(game) for game in match.games)
 
 
+def _rate(num, den):
+    return num / den if den else None
+
+
 def _rank(rows, key):
     """Set row['rank'] by key, best first; tied rows share a rank."""
     ordered = sorted(rows, key=key)
@@ -111,7 +137,7 @@ def event_leaders(matches, win_bonus=MATCH_WIN_BONUS):
     appeared. The first row is the event MVP."""
     lines = defaultdict(Impact)
     wins = defaultdict(int)
-    team_of = {}
+    team_of, players = {}, {}
     for match in matches:
         impact = match_impact(match)
         winners = match.get_wl_teams()[0]
@@ -120,11 +146,12 @@ def event_leaders(matches, win_bonus=MATCH_WIN_BONUS):
                 if player.pid not in impact:
                     continue
                 team_of[player.pid] = team
+                players[player.pid] = player
                 lines[player.pid].add(impact[player.pid])
                 if team is winners:
                     wins[player.pid] += 1
 
-    rows = [{'pid': pid, 'team': team_of[pid], 'impact': line,
+    rows = [{'pid': pid, 'player': players[pid], 'team': team_of[pid], 'impact': line,
              'match_wins': wins[pid],
              'score': line.overall + win_bonus * wins[pid]}
             for pid, line in lines.items()]
@@ -149,11 +176,15 @@ class TierAwards:
     def __init__(self, teams, schedule):
         self.teams = teams
         self.team_of = {p.pid: team for team in teams for p in team.players}
+        self.player_of = {p.pid: p for team in teams for p in team.players}
         self.weeks = sorted({m.week for m in schedule})
         self.by_week = {week: defaultdict(Impact) for week in self.weeks}
+        self.team_games = {week: defaultdict(int) for week in self.weeks}
         for match in schedule:
             for pid, line in match_impact(match).items():
                 self.by_week[match.week][pid].add(line)
+            for team in (match.team1, match.team2):
+                self.team_games[match.week][team.team_name] += len(match.games)
         self._race = {}
 
     def weeks_through(self, week):
@@ -171,10 +202,11 @@ class TierAwards:
 
     def season_race(self, week, kind='overall'):
         """Every player in the tier, ranked by points above the tier average
-        through week. Each row: pid, team, division, games, total, per_game,
-        above_avg, rank, div_rank, prev_rank (last week's rank, None in the
-        first week), move (places gained since last week) and hot (points
-        above average over the last HOT_WEEKS weeks)."""
+        through week. Each row: pid, player, team, division, games, total,
+        per_game, above_avg, rank and div_rank, prev_rank and prev_div_rank
+        (last week's, None in the first week), move and div_move (places
+        gained since last week) and hot (points above average over the last
+        HOT_WEEKS weeks)."""
         weeks = self.weeks_through(week)
         if not weeks:
             return []
@@ -192,6 +224,7 @@ class TierAwards:
             hot = recent.get(pid, Impact())
             rows.append({
                 'pid': pid,
+                'player': self.player_of[pid],
                 'team': team,
                 'division': team.division,
                 'games': line.games,
@@ -208,10 +241,13 @@ class TierAwards:
                 tied = i > 0 and row['above_avg'] == div_rows[i - 1]['above_avg']
                 row['div_rank'] = div_rows[i - 1]['div_rank'] if tied else i + 1
 
-        prev = {r['pid']: r['rank'] for r in self.season_race(weeks[-2], kind)} if len(weeks) > 1 else {}
+        prev = {r['pid']: r for r in self.season_race(weeks[-2], kind)} if len(weeks) > 1 else {}
         for row in rows:
-            row['prev_rank'] = prev.get(row['pid'])
-            row['move'] = row['prev_rank'] - row['rank'] if row['prev_rank'] else 0
+            last = prev.get(row['pid'])
+            row['prev_rank'] = last['rank'] if last else None
+            row['prev_div_rank'] = last['div_rank'] if last else None
+            row['move'] = row['prev_rank'] - row['rank'] if last else 0
+            row['div_move'] = row['prev_div_rank'] - row['div_rank'] if last else 0
 
         self._race[(week, kind)] = rows
         return rows
@@ -223,13 +259,75 @@ class TierAwards:
             return []
         lines = self.by_week[week]
         avg = self.baseline(lines, kind)
-        rows = [{'pid': pid, 'team': self.team_of[pid],
+        rows = [{'pid': pid, 'player': self.player_of[pid], 'team': self.team_of[pid],
                  'division': self.team_of[pid].division,
                  'games': line.games, 'total': line.get(kind),
                  'above_avg': line.get(kind) - avg * line.games}
                 for pid, line in lines.items()]
         rows = _rank(rows, key=lambda r: (-r['above_avg'], -r['games'], r['pid']))
         return [r for r in rows if division is None or r['division'] == division]
+
+    def stat_lines(self, week):
+        """One row per player of regular-season counting stats and rates
+        through week (from player.all_stats), plus ratings as of week."""
+        weeks = set(self.weeks_through(week))
+        team_games = defaultdict(int)
+        for w in weeks:
+            for name, games in self.team_games[w].items():
+                team_games[name] += games
+        rating_week = max(week, 1)  # Week 1's entry holds start-of-season ratings
+
+        rows = []
+        for pid, player in self.player_of.items():
+            team = self.team_of[pid]
+            played = [s for s in player.all_stats if s['Week'] in weeks]
+            tot = {k: sum(s[k] for s in played) for k in
+                   ('GP', 'Throws', 'Hits', 'Blocked', 'Caught',
+                    'Targeted', 'Hit', 'Blocks', 'Catches')}
+            rated = [s for s in player.all_stats if s['Week'] <= rating_week]
+            now = rated[-1] if rated else player.get_start_stats()
+            ratings = {k.lower(): now[k] for k in ('Aim', 'Speed', 'Throw', 'Hands')}
+            start = player.get_start_stats()
+
+            contacts_for = tot['Hits'] + tot['Blocked'] + tot['Caught']
+            contacts_against = tot['Hit'] + tot['Blocks'] + tot['Catches']
+            rows.append({
+                'pid': pid, 'player': player, 'team': team, 'division': team.division,
+                'games': tot['GP'],
+                'qualified': tot['GP'] > 0 and tot['GP'] >= QUALIFY_SHARE * team_games[team.team_name],
+                'hits': tot['Hits'],
+                'hits_per_game': _rate(tot['Hits'], tot['GP']),
+                'hit_rate': _rate(tot['Hits'], tot['Throws']),
+                'accuracy': _rate(contacts_for, tot['Throws']),
+                'catches': tot['Catches'],
+                'catch_rate': _rate(tot['Catches'], tot['Targeted']),
+                'dodge_rate': _rate(tot['Targeted'] - contacts_against, tot['Targeted']),
+                'survival_rate': _rate(tot['Targeted'] - tot['Hit'], tot['Targeted']),
+                **ratings,
+                'rating': sum(ratings.values()) / 4,
+                'improvement': (sum(ratings.values()) - sum(start.values())) / 4,
+            })
+        return rows
+
+    def stat_leaders(self, week, division=None, top=5):
+        """The top players in each STAT_CATEGORIES category, ranked within
+        the tier or within one division: [{key, label, group, fmt, qualify,
+        rows}], each row with rank, player, team and value."""
+        lines = [r for r in self.stat_lines(week)
+                 if division is None or r['division'] == division]
+        leaders = []
+        for key, label, group, fmt, qualify in STAT_CATEGORIES:
+            rows = [{'pid': r['pid'], 'player': r['player'], 'team': r['team'],
+                     'games': r['games'], 'value': r[key]}
+                    for r in lines
+                    if r[key] is not None and (r['qualified'] or not qualify)]
+            # Zero hits, catches or improvement isn't worth listing
+            if key in ('hits', 'catches', 'improvement'):
+                rows = [r for r in rows if r['value'] > 0]
+            rows = _rank(rows, key=lambda r: (-r['value'], -r['games'], r['pid']))
+            leaders.append({'key': key, 'label': label, 'group': group, 'fmt': fmt,
+                            'qualify': qualify, 'rows': rows[:top]})
+        return leaders
 
 
 if __name__ == '__main__':

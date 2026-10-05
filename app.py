@@ -6,6 +6,8 @@ from itertools import groupby
 from league import H2H_WEEKS, TOURNEY_TYPES, FIRST_TOURNEY_WEEK, PLAYOFF_WEEKS, PLAYOFF_ROUND_NAMES
 from tourney import subtype_of, backfill_game_records
 from playoffs import playoff_seeds
+from awards import (TierAwards, KINDS, OFFENSE_WEIGHTS, DEFENSE_WEIGHTS,
+                    QUALIFY_SHARE, HOT_WEEKS)
 
 # Load all tiers data
 with open("season_all_tiers.pkl", "rb") as f:
@@ -14,6 +16,10 @@ with open("season_all_tiers.pkl", "rb") as f:
 # Seasons saved before game records were kept get them rebuilt from their matches
 for tier_data in all_tiers_data.values():
     backfill_game_records(tier_data['teams'], tier_data['schedule'], tier_data['all_tourneys'])
+
+# Impact scores and leaderboards for each tier, built once from the game logs
+tier_awards = {tier: TierAwards(data['teams'], data['schedule'])
+               for tier, data in all_tiers_data.items()}
 
 # Available tiers
 AVAILABLE_TIERS = ['Tier 1', 'Tier 2', 'Tier 3', 'Tier 4']
@@ -562,6 +568,56 @@ def playoffs_page():
                            has_playoffs=bool(rounds),
                            rounds=round_data,
                            champion=champion)
+
+
+@app.route('/leaders')
+def leaders_page():
+    current_week = session.get('current_week', 1)
+    tier_data = get_current_tier_data()
+    awards = tier_awards[session.get('current_tier', 'Tier 1')]
+
+    divisions = sorted({team.division for team in tier_data['teams']})
+    division = request.args.get('division')
+    if division not in divisions:
+        division = None
+    race_kind = request.args.get('race')
+    if race_kind not in KINDS:
+        race_kind = 'overall'
+    show_all = request.args.get('show') == 'all'
+
+    def scoped(rows):
+        """Race rows in the selected division, placed within it; else the tier."""
+        return [dict(row,
+                     place=row['div_rank'] if division else row['rank'],
+                     change=row['div_move'] if division else row['move'],
+                     is_new=row['prev_rank'] is None)
+                for row in rows if division is None or row['division'] == division]
+
+    races = {kind: scoped(awards.season_race(current_week, kind)) for kind in KINDS}
+    race_table = [row for row in races[race_kind] if row['games'] > 0]
+
+    played_weeks = awards.weeks_through(current_week)
+    groups = []
+    for category in awards.stat_leaders(current_week, division):
+        if not groups or groups[-1]['name'] != category['group']:
+            groups.append({'name': category['group'], 'categories': []})
+        groups[-1]['categories'].append(category)
+
+    return render_template('leaders.html',
+                           divisions=divisions,
+                           division=division,
+                           through_week=played_weeks[-1] if played_weeks else None,
+                           season_over=bool(played_weeks) and played_weeks[-1] == awards.weeks[-1],
+                           races=races,
+                           race_kind=race_kind,
+                           race_table=race_table if show_all else race_table[:25],
+                           race_total=len(race_table),
+                           show_all=show_all,
+                           stat_groups=groups,
+                           offense_weights=OFFENSE_WEIGHTS,
+                           defense_weights=DEFENSE_WEIGHTS,
+                           qualify_pct=round(QUALIFY_SHARE * 100),
+                           hot_weeks=HOT_WEEKS)
 
 
 if __name__ == "__main__":
