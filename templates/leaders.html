@@ -1,0 +1,459 @@
+{% extends "base.html" %}
+
+{% block title %}Leaders{% endblock %}
+
+{% macro stat_value(value, fmt) -%}
+    {%- if fmt == 'int' -%}{{ value }}
+    {%- elif fmt == 'dec' -%}{{ "%.2f"|format(value) }}
+    {%- elif fmt == 'pct' -%}{{ "%.1f"|format(value * 100) }}%
+    {%- elif fmt == 'signed' -%}{{ "%+.1f"|format(value) }}
+    {%- else -%}{{ "%.1f"|format(value) }}
+    {%- endif -%}
+{%- endmacro %}
+
+{% macro movement(row) -%}
+    {%- if row.is_new -%}<span class="move none"></span>
+    {%- elif row.change > 0 -%}<span class="move up">▲{{ row.change }}</span>
+    {%- elif row.change < 0 -%}<span class="move down">▼{{ -row.change }}</span>
+    {%- else -%}<span class="move same">–</span>
+    {%- endif -%}
+{%- endmacro %}
+
+{% set race_titles = {'overall': 'MVP Race', 'offense': 'Offensive Player', 'defense': 'Defensive Player'} %}
+
+{% block head %}
+    <style>
+        .leaders-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 6px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #777;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: #333;
+            margin: 35px 0 15px;
+        }
+
+        h3 {
+            color: #555;
+            margin: 25px 0 12px;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .section-note {
+            color: #777;
+            font-size: 14px;
+            margin: -8px 0 15px;
+        }
+
+        /* Division filter and race tabs */
+        .pills {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .pills.left {
+            justify-content: flex-start;
+        }
+
+        .pills a {
+            padding: 7px 16px;
+            border-radius: 20px;
+            background: white;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+        }
+
+        .pills a.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        /* Cards */
+        .race-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 16px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 14px 16px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .stat-grid .card-header {
+            background: #f8f9fa;
+            color: #333;
+            font-size: 15px;
+            padding: 10px 14px;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .card-header .note {
+            display: block;
+            font-size: 11px;
+            font-weight: normal;
+            color: #999;
+            margin-top: 2px;
+        }
+
+        .card-footer {
+            padding: 10px 16px;
+            text-align: right;
+            border-top: 1px solid #eee;
+        }
+
+        .card-footer a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .card-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .empty {
+            padding: 20px;
+            text-align: center;
+            color: #999;
+        }
+
+        /* Tables */
+        .table-scroll {
+            overflow-x: auto;
+        }
+
+        .leader-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .leader-table th {
+            background: #f8f9fa;
+            padding: 10px;
+            text-align: left;
+            font-size: 13px;
+            color: #555;
+            border-bottom: 2px solid #ddd;
+            white-space: nowrap;
+        }
+
+        .leader-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #eee;
+            white-space: nowrap;
+        }
+
+        .leader-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .leader-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .leader-table .num {
+            text-align: right;
+        }
+
+        .leader-table .rank {
+            font-weight: bold;
+            color: #667eea;
+            width: 30px;
+        }
+
+        .player-link {
+            color: #333;
+            font-weight: 500;
+            text-decoration: none;
+        }
+
+        .player-link:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        .team-link {
+            display: block;
+            font-size: 12px;
+            color: #999;
+            text-decoration: none;
+        }
+
+        .team-link:hover {
+            color: #667eea;
+        }
+
+        .points {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .positive {
+            color: #2e7d32;
+        }
+
+        .negative {
+            color: #c62828;
+        }
+
+        .move {
+            font-size: 12px;
+            display: inline-block;
+            min-width: 28px;
+        }
+
+        .move.up { color: #2e7d32; }
+        .move.down { color: #c62828; }
+        .move.same { color: #bbb; }
+
+        .show-toggle {
+            text-align: center;
+            padding: 12px;
+        }
+
+        .show-toggle a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        /* Scoring explainer */
+        details.scoring {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 14px 18px;
+            margin-top: 35px;
+            color: #555;
+            line-height: 1.5;
+        }
+
+        details.scoring summary {
+            font-weight: bold;
+            color: #333;
+            cursor: pointer;
+        }
+
+        details.scoring p {
+            margin: 10px 0;
+        }
+
+        .weights {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+        }
+
+        .weights table {
+            border-collapse: collapse;
+        }
+
+        .weights td, .weights th {
+            padding: 4px 12px 4px 0;
+            text-align: left;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="leaders-container">
+    <h1>League Leaders</h1>
+    <div class="subtitle">
+        {{ current_tier }}{% if division %} · {{ division }} Division{% endif %} ·
+        {% if through_week is none %}no games played yet
+        {% elif season_over %}regular season final
+        {% else %}through Week {{ "%g"|format(through_week) }}{% endif %}
+    </div>
+
+    <div class="pills">
+        <a href="{{ url_for('leaders_page', race=race_kind) }}" class="{{ 'active' if not division }}">All {{ current_tier }}</a>
+        {% for div in divisions %}
+        <a href="{{ url_for('leaders_page', division=div, race=race_kind) }}" class="{{ 'active' if division == div }}">{{ div }}</a>
+        {% endfor %}
+    </div>
+
+    <h2>Season Race</h2>
+    <p class="section-note">
+        Points above average: season impact minus what an average {{ current_tier }} player would score in the same number of games.
+    </p>
+    <div class="race-grid">
+        {% for kind in ['overall', 'offense', 'defense'] %}
+        <div class="card">
+            <div class="card-header">{{ race_titles[kind] }}</div>
+            {% set rows = races[kind][:10] %}
+            {% if through_week is none %}
+            <div class="empty">The race starts after Week 1.</div>
+            {% else %}
+            <table class="leader-table">
+                <tbody>
+                    {% for row in rows %}
+                    <tr>
+                        <td class="rank">{{ row.place }}</td>
+                        <td>{{ movement(row) }}</td>
+                        <td>
+                            <a class="player-link" href="/player/{{ row.pid }}">{{ row.player.name|short_name }}</a>
+                            <a class="team-link" href="/team/{{ row.team.team_name }}">{{ row.team.team_name }}</a>
+                        </td>
+                        <td class="num points {{ 'positive' if row.above_avg > 0 else 'negative' }}">{{ "%+.1f"|format(row.above_avg) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="card-footer">
+                <a href="{{ url_for('leaders_page', division=division, race=kind) }}#race-table">Full standings →</a>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if through_week is not none %}
+    <h2 id="race-table">{{ race_titles[race_kind] }} Standings</h2>
+    <div class="pills left">
+        {% for kind in ['overall', 'offense', 'defense'] %}
+        <a href="{{ url_for('leaders_page', division=division, race=kind, show='all' if show_all else none) }}#race-table" class="{{ 'active' if race_kind == kind }}">{{ race_titles[kind] }}</a>
+        {% endfor %}
+    </div>
+    <div class="card">
+        <div class="table-scroll">
+            <table class="leader-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th></th>
+                        <th>Player</th>
+                        <th class="num">GP</th>
+                        <th class="num">Per Game</th>
+                        <th class="num">Above Avg</th>
+                        <th class="num">Last {{ hot_weeks }} Wks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in race_table %}
+                    <tr>
+                        <td class="rank">{{ row.place }}</td>
+                        <td>{{ movement(row) }}</td>
+                        <td>
+                            <a class="player-link" href="/player/{{ row.pid }}">{{ row.player.name|full_name }}</a>
+                            <a class="team-link" href="/team/{{ row.team.team_name }}">{{ row.team.team_name }} · {{ row.division }}</a>
+                        </td>
+                        <td class="num">{{ row.games }}</td>
+                        <td class="num">{{ "%+.2f"|format(row.per_game) }}</td>
+                        <td class="num points {{ 'positive' if row.above_avg > 0 else 'negative' }}">{{ "%+.1f"|format(row.above_avg) }}</td>
+                        <td class="num {{ 'positive' if row.hot > 0 else 'negative' }}">{{ "%+.1f"|format(row.hot) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if race_total > 25 %}
+        <div class="show-toggle">
+            {% if show_all %}
+            <a href="{{ url_for('leaders_page', division=division, race=race_kind) }}#race-table">Show top 25</a>
+            {% else %}
+            <a href="{{ url_for('leaders_page', division=division, race=race_kind, show='all') }}#race-table">Show all {{ race_total }} players</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <h2>Stat Leaders</h2>
+    <p class="section-note">
+        Rate stats need {{ qualify_pct }}% of the team's games played. Ratings are as of the selected week.
+    </p>
+    {% for group in stat_groups %}
+    <h3>{{ group.name }}</h3>
+    <div class="stat-grid">
+        {% for category in group.categories %}
+        <div class="card">
+            <div class="card-header">
+                {{ category.label }}
+                {% if category.qualify %}<span class="note">min. {{ qualify_pct }}% of team games</span>{% endif %}
+            </div>
+            {% if category.rows %}
+            <table class="leader-table">
+                <tbody>
+                    {% for row in category.rows %}
+                    <tr>
+                        <td class="rank">{{ row.rank }}</td>
+                        <td>
+                            <a class="player-link" href="/player/{{ row.pid }}">{{ row.player.name|short_name }}</a>
+                            <a class="team-link" href="/team/{{ row.team.team_name }}">{{ row.team.team_name }}</a>
+                        </td>
+                        <td class="num points">{{ stat_value(row.value, category.fmt) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty">No qualified players yet</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+
+    <details class="scoring">
+        <summary>How impact is scored</summary>
+        <p>
+            Every throw scores for two players: the thrower earns <strong>offense</strong> points and the
+            target earns <strong>defense</strong> points. <strong>Overall</strong> is offense plus defense.
+        </p>
+        <div class="weights">
+            <table>
+                <tr><th colspan="2">Offense (thrower)</th></tr>
+                {% for result, points in offense_weights.items() %}
+                <tr><td>{{ {'Catch': 'Caught', 'Block': 'Blocked'}.get(result, result) }}</td><td>{{ "%+.2f"|format(points) }}</td></tr>
+                {% endfor %}
+            </table>
+            <table>
+                <tr><th colspan="2">Defense (target)</th></tr>
+                {% for result, points in defense_weights.items() %}
+                <tr><td>{{ {'Miss': 'Dodge', 'Hit': 'Got hit'}.get(result, result) }}</td><td>{{ "%+.2f"|format(points) }}</td></tr>
+                {% endfor %}
+            </table>
+        </div>
+        <p>
+            The season race ranks players by points above average. The tier average is recalculated each
+            week from games played so far, so an average player stays near zero however many games they play.
+            Playoff games don't count toward the race.
+        </p>
+    </details>
+</div>
+{% endblock %}
