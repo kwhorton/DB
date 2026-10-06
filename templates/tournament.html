@@ -365,6 +365,81 @@
             white-space: nowrap;
         }
 
+        /* MVPs */
+        .match-mvp {
+            padding: 5px 10px;
+            border-top: 1px solid #f0e0a8;
+            background: #fff8e1;
+            font-size: 11px;
+            color: #777;
+            white-space: nowrap;
+            border-radius: 0 0 6px 6px;
+        }
+
+        .match-mvp a, .mvp-table a {
+            color: #333;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .match-mvp a:hover, .mvp-table a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        .mvp-title-name {
+            text-transform: none;
+        }
+
+        .mvp-pending {
+            text-align: center;
+            color: #999;
+            font-size: 13px;
+        }
+
+        .mvp-table {
+            margin: 0 auto;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+            font-size: 13px;
+        }
+
+        .mvp-table th {
+            background: #f8f9fa;
+            color: #555;
+            padding: 8px 12px;
+            border-bottom: 2px solid #ddd;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        .mvp-table td {
+            padding: 7px 12px;
+            border-bottom: 1px solid #eee;
+            white-space: nowrap;
+        }
+
+        .mvp-table th.has-tip {
+            cursor: help;
+            text-decoration: underline dotted;
+        }
+
+        .mvp-table .num {
+            text-align: right;
+        }
+
+        .mvp-table tr.mvp-top td {
+            background: #fff8e1;
+            font-weight: bold;
+        }
+
+        .mvp-scroll {
+            overflow-x: auto;
+        }
+
         .team-seed {
             display: inline-block;
             flex-shrink: 0;
@@ -415,6 +490,7 @@
         <div class="global-controls" id="globalControls"></div>
         <div class="finish-order" id="seedList"></div>
         <div class="finish-order" id="finishOrder"></div>
+        <div class="finish-order" id="tournamentMvp"></div>
         <div id="tournamentBracket"></div>
     </div>
 
@@ -659,6 +735,12 @@
                 `;
             }
 
+            const mvp = match.mvp && isMatchComplete(matchIndex) ? `
+                <div class="match-mvp" title="Match MVP · ${match.mvp.hits} hit${match.mvp.hits === 1 ? '' : 's'} · ${match.mvp.catches} catch${match.mvp.catches === 1 ? '' : 'es'}">
+                    ⭐ <a href="/player/${match.mvp.pid}">${match.mvp.name}</a> ${signed(match.mvp.overall)}
+                </div>
+            ` : '';
+
             return `
                 <div class="match" id="match-${matchIndex}">
                     <div class="match-header">
@@ -673,6 +755,53 @@
                         <span class="team-name">${teamLabel(match.team2_name)}</span>
                         ${team2ScoresHTML}
                     </div>
+                    ${mvp}
+                </div>
+            `;
+        }
+
+        function signed(value) {
+            return (value >= 0 ? '+' : '') + value.toFixed(1);
+        }
+
+        function renderTournamentMvp() {
+            // Revealed only once every match is, since it reflects all of them
+            const container = document.getElementById('tournamentMvp');
+            const leaders = tournamentData.leaders;
+            if (!allMatchIndices.every(isMatchComplete)) {
+                container.innerHTML = `
+                    <div class="finish-order-title">Tournament MVP</div>
+                    <div class="mvp-pending">Revealed when every match has been played</div>
+                `;
+                return;
+            }
+            container.innerHTML = `
+                <div class="finish-order-title">⭐ Tournament MVP: <span class="mvp-title-name">${leaders[0].name} (${leaders[0].team})</span></div>
+                <div class="mvp-scroll">
+                    <table class="mvp-table">
+                        <thead>
+                            <tr>
+                                <th>#</th><th>Player</th><th>Team</th>
+                                <th class="num">Match Wins</th><th class="num">Hits</th>
+                                <th class="num">Catches</th><th class="num">Impact</th>
+                                <th class="num has-tip" title="Impact + ${tournamentData.win_bonus} per match won">MVP Pts</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${leaders.map((row, i) => `
+                                <tr class="${i === 0 ? 'mvp-top' : ''}">
+                                    <td>${row.rank}</td>
+                                    <td><a href="/player/${row.pid}">${row.name}</a></td>
+                                    <td>${row.team}</td>
+                                    <td class="num">${row.match_wins}</td>
+                                    <td class="num">${row.hits}</td>
+                                    <td class="num">${row.catches}</td>
+                                    <td class="num">${signed(row.overall)}</td>
+                                    <td class="num">${row.score.toFixed(1)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
                 </div>
             `;
         }
@@ -739,6 +868,7 @@
             renderControls();
             renderSeeds();
             renderFinishOrder();
+            renderTournamentMvp();
             
             container.innerHTML = `
                 <div class="bracket-grid">

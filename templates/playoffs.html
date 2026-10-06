@@ -47,6 +47,53 @@
             text-decoration: none;
         }
 
+        .champion-banner .mvp {
+            margin-top: 8px;
+            font-size: 15px;
+        }
+
+        .champion-banner .mvp a {
+            font-weight: bold;
+        }
+
+        .match-mvp {
+            padding: 4px 10px;
+            border-top: 1px solid #f0e0a8;
+            background: #fff8e1;
+            font-size: 12px;
+            color: #777;
+        }
+
+        .match-mvp a, .mvp-name {
+            color: #333;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .match-mvp a:hover, .mvp-name:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        .summary .mvp-detail {
+            color: #777;
+            font-size: 13px;
+        }
+
+        .leaders-table th.has-tip {
+            cursor: help;
+            text-decoration: underline dotted;
+        }
+
+        .leaders-table .num {
+            text-align: right;
+        }
+
+        .leaders-table tr.mvp-top td {
+            background: #fff8e1;
+            font-weight: bold;
+        }
+
         .card {
             background: white;
             border-radius: 8px;
@@ -265,6 +312,9 @@
 <div class="champion-banner">
     <div class="label">Champion</div>
     <div class="name"><a href="/team/{{ champion.team_name }}">{{ champion.team_name }}</a></div>
+    {% if playoff_leaders %}
+    <div class="mvp">⭐ Playoff MVP: <a href="/player/{{ playoff_leaders[0].pid }}">{{ playoff_leaders[0].name }}</a> ({{ playoff_leaders[0].team }})</div>
+    {% endif %}
 </div>
 {% endif %}
 
@@ -328,6 +378,11 @@
                         <span><span class="seed">{{ m.team2.seed }}</span><a class="team-link" href="/team/{{ m.team2.team_name }}">{{ m.team2.team_name }}</a></span>
                         <span class="score">{{ m.score2 }}</span>
                     </div>
+                    {% if m.mvp %}
+                    <div class="match-mvp" title="Match MVP · {{ m.mvp.hits }} hit{{ 's' if m.mvp.hits != 1 }} · {{ m.mvp.catches }} catch{{ 'es' if m.mvp.catches != 1 }}">
+                        ⭐ <a href="/player/{{ m.mvp.pid }}">{{ m.mvp.name }}</a> {{ "%+.1f"|format(m.mvp.overall) }}
+                    </div>
+                    {% endif %}
                     <a class="watch" href="{{ url_for('animate_playoff_match', round_num=rnd.num, match_index=m.index) }}">Watch</a>
                 </div>
                 {% endfor %}
@@ -345,6 +400,16 @@
                     {% endfor %}
                 </ol>
             </div>
+            {% if rnd.mvp %}
+            <div>
+                <h4>⭐ Final Four MVP</h4>
+                <a class="mvp-name" href="/player/{{ rnd.mvp.pid }}">{{ rnd.mvp.name }}</a> ({{ rnd.mvp.team }})
+                <div class="mvp-detail">
+                    {{ rnd.mvp.match_wins }} match win{{ 's' if rnd.mvp.match_wins != 1 }} · {{ rnd.mvp.hits }} hit{{ 's' if rnd.mvp.hits != 1 }} · {{ rnd.mvp.catches }} catch{{ 'es' if rnd.mvp.catches != 1 }}<br>
+                    {{ "%+.1f"|format(rnd.mvp.overall) }} impact · {{ "%.1f"|format(rnd.mvp.score) }} MVP pts
+                </div>
+            </div>
+            {% endif %}
             {% else %}
             <div>
                 <h4>Advance</h4>
@@ -377,5 +442,44 @@
     </div>
 </div>
 {% endfor %}
+
+{% if playoff_leaders %}
+<div class="card">
+    <div class="card-header">
+        <span>{% if playoffs_complete %}⭐ Playoff MVP{% else %}Playoff Leaders{% endif %}</span>
+        <span class="week">{% if playoffs_complete %}All playoff rounds{% else %}Through {{ rounds[rounds_played - 1].name }}{% endif %}</span>
+    </div>
+    <div class="table-scroll">
+    <table class="leaders-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Player</th>
+                <th>Team</th>
+                <th class="num">Match Wins</th>
+                <th class="num">Hits</th>
+                <th class="num">Catches</th>
+                <th class="num">Impact</th>
+                <th class="num has-tip" title="Impact + {{ win_bonus }} per match won">MVP Pts</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in playoff_leaders %}
+            <tr {% if loop.first and playoffs_complete %}class="mvp-top"{% endif %}>
+                <td>{{ row.rank }}</td>
+                <td><a class="team-link" href="/player/{{ row.pid }}">{{ row.name }}</a></td>
+                <td><a class="team-link" href="/team/{{ row.team }}">{{ row.team }}</a></td>
+                <td class="num">{{ row.match_wins }}</td>
+                <td class="num">{{ row.hits }}</td>
+                <td class="num">{{ row.catches }}</td>
+                <td class="num">{{ "%+.1f"|format(row.overall) }}</td>
+                <td class="num">{{ "%.1f"|format(row.score) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+{% endif %}
 {% endif %}
 {% endblock %}

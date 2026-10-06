@@ -230,6 +230,35 @@
             background: #f8f9fa;
         }
 
+        .mvp-row td {
+            background: #fff8e1;
+            border-top: 1px solid #f0e0a8;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .mvp-badge {
+            font-weight: bold;
+            color: #b8860b;
+            margin-right: 6px;
+        }
+
+        .mvp-name {
+            font-weight: bold;
+            color: #333;
+            text-decoration: none;
+            margin-right: 6px;
+        }
+
+        .mvp-name:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        .mvp-detail {
+            color: #777;
+        }
+
         .future-match-notice {
             text-align: center;
             color: #f39c12;
@@ -519,6 +548,18 @@
                             {% endif %} 
                         </tr>
                     </tbody>
+                    {% if show_results and event.mvp %}
+                    <tfoot>
+                        <!-- Revealed with the final score, or when Next Game reaches the end -->
+                        <tr class="final-score mvp-row" style="display: none;">
+                            <td colspan="100%">
+                                <span class="mvp-badge">⭐ Match MVP</span>
+                                <a class="mvp-name" href="/player/{{ event.mvp.pid }}">{{ event.mvp.name }}</a>
+                                <span class="mvp-detail">{{ event.mvp.team }} · {{ event.mvp.hits }} hit{{ 's' if event.mvp.hits != 1 }} · {{ event.mvp.catches }} catch{{ 'es' if event.mvp.catches != 1 }} · {{ "%+.1f"|format(event.mvp.overall) }} impact</span>
+                            </td>
+                        </tr>
+                    </tfoot>
+                    {% endif %}
                 </table>
 
                 <script>
@@ -561,6 +602,7 @@
                         progressiveScores.forEach(col => {
                             col.style.display = 'none';
                         });
+                        table.querySelectorAll('.mvp-row').forEach(row => row.style.display = 'none');
                         table.dataset.mode = 'hidden';
                         button.textContent = 'Show Scores';
                         table.querySelector('.reset-game').style.display = 'none';
@@ -676,6 +718,7 @@
                     if (team1Sets === 3 || team2Sets === 3 || currentGame + 1 >= data.gameWinners.length) {
                         button.disabled = true;
                         button.textContent = 'Match Complete';
+                        table.querySelectorAll('.mvp-row').forEach(row => row.style.display = '');
                     }
                 }
 
@@ -694,6 +737,7 @@
                     
                     gameScoreCells.forEach(cell => cell.textContent = '0');
                     setScoreCells.forEach(cell => cell.textContent = '0');
+                    table.querySelectorAll('.mvp-row').forEach(row => row.style.display = 'none');
                     
                     const nextButton = table.querySelector('.next-game');
                     nextButton.disabled = false;

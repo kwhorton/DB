@@ -7,7 +7,7 @@ from league import H2H_WEEKS, TOURNEY_TYPES, FIRST_TOURNEY_WEEK, PLAYOFF_WEEKS, 
 from tourney import subtype_of, backfill_game_records
 from playoffs import playoff_seeds
 from awards import (TierAwards, KINDS, OFFENSE_WEIGHTS, DEFENSE_WEIGHTS,
-                    QUALIFY_SHARE, HOT_WEEKS)
+                    QUALIFY_SHARE, HOT_WEEKS, MATCH_WIN_BONUS, match_mvp, event_leaders)
 
 # Load all tiers data
 with open("season_all_tiers.pkl", "rb") as f:
@@ -43,6 +43,28 @@ def format_short_name(name):
 app.jinja_env.filters['ordinal'] = ordinal
 app.jinja_env.filters['full_name'] = format_full_name
 app.jinja_env.filters['short_name'] = format_short_name
+
+def award_info(pid, player, team, impact, **extra):
+    """An MVP or leaderboard row as plain values, for templates and JSON."""
+    return dict(pid=pid,
+                name=format_short_name(player.name),
+                team=team.team_name,
+                overall=impact.overall,
+                hits=impact.hits,
+                catches=impact.catches,
+                **extra)
+
+def match_mvp_info(match):
+    mvp = match_mvp(match)
+    if mvp is None:
+        return None
+    return award_info(mvp['pid'], mvp['player'], mvp['team'], mvp['impact'])
+
+def event_leaders_info(matches, top=5):
+    """Top players across a tournament or playoff run; the first is its MVP."""
+    return [award_info(row['pid'], row['player'], row['team'], row['impact'],
+                       rank=row['rank'], match_wins=row['match_wins'], score=row['score'])
+            for row in event_leaders(matches)[:top]]
 
 @app.before_request
 def set_current_week_and_tier():
@@ -230,6 +252,7 @@ def wkschedule(week = None):
             event.team2_division = event.team2.division
             event.team1_place = division_place(event.team1, teams, n, rating_week)
             event.team2_place = division_place(event.team2, teams, n, rating_week)
+            event.mvp = match_mvp_info(event) if show_results else None
           
 
         return render_template('wkschedule.html', week=week_num, is_tournament=False,
@@ -303,6 +326,8 @@ def view_tournament(tournament_id):
         'tournament_subtype': tournament_subtype,
         'tournament_id': tournament_id,
         'teams_info': teams_info,
+        'leaders': event_leaders_info(tourney.matches),
+        'win_bonus': MATCH_WIN_BONUS,
         'matches': []
     }
     
@@ -314,7 +339,8 @@ def view_tournament(tournament_id):
                 'team1_score': match.match_score[0],
                 'team2_score': match.match_score[1],
                 'winner': match.winner,
-                'games': [{'winner': game.winner} for game in match.games]
+                'games': [{'winner': game.winner} for game in match.games],
+                'mvp': match_mvp_info(match)
             }
             tournament_data['matches'].append(match_data)
         else:
@@ -537,7 +563,8 @@ def playoffs_page():
             'stages': [],
             'advancers': [],
             'eliminated': [],
-            'finish_order': []
+            'finish_order': [],
+            'mvp': None
         }
         if played:
             matches = [{
@@ -547,7 +574,8 @@ def playoffs_page():
                 'team2': entry(m.team2),
                 'score1': m.match_score[0],
                 'score2': m.match_score[1],
-                'winner': m.winner
+                'winner': m.winner,
+                'mvp': match_mvp_info(m)
             } for i, (m, label) in enumerate(zip(rnd.matches, rnd.labels))]
             # Consecutive matches of the same stage form a bracket column
             data['stages'] = [{'label': label, 'matches': list(group)}
@@ -556,18 +584,30 @@ def playoffs_page():
             data['eliminated'] = [entry(t) for t in rnd.team_list
                                   if t not in rnd.advancers and rnd.advancers]
             data['finish_order'] = [entry(t) for t in rnd.finish_order]
+            if rnd.finish_order:    # the Final Four
+                data['mvp'] = event_leaders_info(rnd.matches, top=1)[0]
         # The next round's field is set once this one has been played
         field_known = played
         round_data.append(data)
 
     champion = round_data[-1]['finish_order'][0] if round_data[-1]['finish_order'] else None
 
+    # Playoff MVP race over the rounds played so far; final once the Final Four is
+    played_matches = [m for rnd, data in zip(rounds, round_data) if data['played']
+                      for m in rnd.matches]
+    playoff_leaders = event_leaders_info(played_matches) if played_matches else []
+    rounds_played = sum(data['played'] for data in round_data)
+
     return render_template('playoffs.html',
                            seeds=seed_rows,
                            projected=current_week < last_regular_week,
                            has_playoffs=bool(rounds),
                            rounds=round_data,
-                           champion=champion)
+                           champion=champion,
+                           playoff_leaders=playoff_leaders,
+                           rounds_played=rounds_played,
+                           playoffs_complete=champion is not None,
+                           win_bonus=MATCH_WIN_BONUS)
 
 
 @app.route('/leaders')

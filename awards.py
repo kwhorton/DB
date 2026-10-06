@@ -63,6 +63,8 @@ class Impact:
     offense: float = 0.0
     defense: float = 0.0
     games: int = 0
+    hits: int = 0           # opponents this player hit
+    catches: int = 0        # throws this player caught
 
     @property
     def overall(self):
@@ -75,6 +77,8 @@ class Impact:
         self.offense += other.offense
         self.defense += other.defense
         self.games += other.games
+        self.hits += other.hits
+        self.catches += other.catches
 
 
 def game_impact(game):
@@ -87,6 +91,10 @@ def game_impact(game):
             continue
         impact[play['Thrower']].offense += OFFENSE_WEIGHTS[result]
         impact[play['Target']].defense += DEFENSE_WEIGHTS[result]
+        if result == 'Hit':
+            impact[play['Thrower']].hits += 1
+        elif result == 'Catch':
+            impact[play['Target']].catches += 1
     return impact
 
 
@@ -119,16 +127,16 @@ def _rank(rows, key):
 
 def match_mvp(match):
     """The winning team's best overall impact in this match, as
-    {'pid', 'team', 'impact'}; ties go to offense. None if unplayed."""
+    {'pid', 'player', 'team', 'impact'}; ties go to offense. None if unplayed."""
     if match.winner is None:
         return None
     winners = match.team1 if match.winner == 1 else match.team2
     impact = match_impact(match)
-    candidates = [p.pid for p in winners.players if p.pid in impact]
+    candidates = [p for p in winners.players if p.pid in impact]
     if not candidates:
         return None
-    pid = min(candidates, key=lambda p: (-impact[p].overall, -impact[p].offense, p))
-    return {'pid': pid, 'team': winners, 'impact': impact[pid]}
+    player = min(candidates, key=lambda p: (-impact[p.pid].overall, -impact[p.pid].offense, p.pid))
+    return {'pid': player.pid, 'player': player, 'team': winners, 'impact': impact[player.pid]}
 
 
 def event_leaders(matches, win_bonus=MATCH_WIN_BONUS):
