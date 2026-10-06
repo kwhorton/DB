@@ -736,7 +736,7 @@
             }
 
             const mvp = match.mvp && isMatchComplete(matchIndex) ? `
-                <div class="match-mvp" title="Match MVP · ${match.mvp.hits} hits · ${match.mvp.catches} catches">
+                <div class="match-mvp" title="Match MVP · ${match.mvp.hits} hit${match.mvp.hits === 1 ? '' : 's'} · ${match.mvp.catches} catch${match.mvp.catches === 1 ? '' : 'es'}">
                     ⭐ <a href="/player/${match.mvp.pid}">${match.mvp.name}</a> ${signed(match.mvp.overall)}
                 </div>
             ` : '';

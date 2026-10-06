@@ -555,7 +555,7 @@
                             <td colspan="100%">
                                 <span class="mvp-badge">⭐ Match MVP</span>
                                 <a class="mvp-name" href="/player/{{ event.mvp.pid }}">{{ event.mvp.name }}</a>
-                                <span class="mvp-detail">{{ event.mvp.team }} · {{ event.mvp.hits }} hits · {{ event.mvp.catches }} catches · {{ "%+.1f"|format(event.mvp.overall) }} impact</span>
+                                <span class="mvp-detail">{{ event.mvp.team }} · {{ event.mvp.hits }} hit{{ 's' if event.mvp.hits != 1 }} · {{ event.mvp.catches }} catch{{ 'es' if event.mvp.catches != 1 }} · {{ "%+.1f"|format(event.mvp.overall) }} impact</span>
                             </td>
                         </tr>
                     </tfoot>
