@@ -422,6 +422,11 @@
             white-space: nowrap;
         }
 
+        .mvp-table th.has-tip {
+            cursor: help;
+            text-decoration: underline dotted;
+        }
+
         .mvp-table .num {
             text-align: right;
         }
@@ -778,7 +783,8 @@
                             <tr>
                                 <th>#</th><th>Player</th><th>Team</th>
                                 <th class="num">Match Wins</th><th class="num">Hits</th>
-                                <th class="num">Catches</th><th class="num">Impact</th><th class="num">Score</th>
+                                <th class="num">Catches</th><th class="num">Impact</th>
+                                <th class="num has-tip" title="Impact + ${tournamentData.win_bonus} per match won">MVP Pts</th>
                             </tr>
                         </thead>
                         <tbody>

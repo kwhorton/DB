@@ -7,7 +7,7 @@ from league import H2H_WEEKS, TOURNEY_TYPES, FIRST_TOURNEY_WEEK, PLAYOFF_WEEKS, 
 from tourney import subtype_of, backfill_game_records
 from playoffs import playoff_seeds
 from awards import (TierAwards, KINDS, OFFENSE_WEIGHTS, DEFENSE_WEIGHTS,
-                    QUALIFY_SHARE, HOT_WEEKS, match_mvp, event_leaders)
+                    QUALIFY_SHARE, HOT_WEEKS, MATCH_WIN_BONUS, match_mvp, event_leaders)
 
 # Load all tiers data
 with open("season_all_tiers.pkl", "rb") as f:
@@ -326,6 +326,7 @@ def view_tournament(tournament_id):
         'tournament_id': tournament_id,
         'teams_info': teams_info,
         'leaders': tournament_leaders_info(tourney),
+        'win_bonus': MATCH_WIN_BONUS,
         'matches': []
     }
     
