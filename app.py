@@ -7,7 +7,7 @@ from league import H2H_WEEKS, TOURNEY_TYPES, FIRST_TOURNEY_WEEK, PLAYOFF_WEEKS, 
 from tourney import subtype_of, backfill_game_records
 from playoffs import playoff_seeds
 from awards import (TierAwards, KINDS, OFFENSE_WEIGHTS, DEFENSE_WEIGHTS,
-                    QUALIFY_SHARE, HOT_WEEKS)
+                    QUALIFY_SHARE, HOT_WEEKS, match_mvp, event_leaders)
 
 # Load all tiers data
 with open("season_all_tiers.pkl", "rb") as f:
@@ -43,6 +43,27 @@ def format_short_name(name):
 app.jinja_env.filters['ordinal'] = ordinal
 app.jinja_env.filters['full_name'] = format_full_name
 app.jinja_env.filters['short_name'] = format_short_name
+
+def award_info(pid, player, team, impact, **extra):
+    """An MVP or leaderboard row as plain values, for templates and JSON."""
+    return dict(pid=pid,
+                name=format_short_name(player.name),
+                team=team.team_name,
+                overall=impact.overall,
+                hits=impact.hits,
+                catches=impact.catches,
+                **extra)
+
+def match_mvp_info(match):
+    mvp = match_mvp(match)
+    if mvp is None:
+        return None
+    return award_info(mvp['pid'], mvp['player'], mvp['team'], mvp['impact'])
+
+def tournament_leaders_info(tourney, top=5):
+    return [award_info(row['pid'], row['player'], row['team'], row['impact'],
+                       rank=row['rank'], match_wins=row['match_wins'], score=row['score'])
+            for row in event_leaders(tourney.matches)[:top]]
 
 @app.before_request
 def set_current_week_and_tier():
@@ -230,6 +251,7 @@ def wkschedule(week = None):
             event.team2_division = event.team2.division
             event.team1_place = division_place(event.team1, teams, n, rating_week)
             event.team2_place = division_place(event.team2, teams, n, rating_week)
+            event.mvp = match_mvp_info(event) if show_results else None
           
 
         return render_template('wkschedule.html', week=week_num, is_tournament=False,
@@ -303,6 +325,7 @@ def view_tournament(tournament_id):
         'tournament_subtype': tournament_subtype,
         'tournament_id': tournament_id,
         'teams_info': teams_info,
+        'leaders': tournament_leaders_info(tourney),
         'matches': []
     }
     
@@ -314,7 +337,8 @@ def view_tournament(tournament_id):
                 'team1_score': match.match_score[0],
                 'team2_score': match.match_score[1],
                 'winner': match.winner,
-                'games': [{'winner': game.winner} for game in match.games]
+                'games': [{'winner': game.winner} for game in match.games],
+                'mvp': match_mvp_info(match)
             }
             tournament_data['matches'].append(match_data)
         else:
