@@ -23,8 +23,12 @@ from dataclasses import dataclass
 # Points per throw result, from the thrower's side and the target's side.
 # A Miss is a dodge for the target; a Block is a blocked throw for the
 # thrower and a successful block for the target.
-OFFENSE_WEIGHTS = {'Hit': 1.0, 'Block': 0.15, 'Miss': -0.05, 'Catch': -1.25}
-DEFENSE_WEIGHTS = {'Catch': 1.5, 'Block': 0.3, 'Miss': 0.1, 'Hit': -0.6}
+# 1 point = one hit. A hit counts the same for both players, since avoiding
+# one is worth as much as making one; a catch is worth about 1.1 hits to
+# the game result (measured on the 2033 season). Blocks and dodges get small
+# credit of their own.
+OFFENSE_WEIGHTS = {'Hit': 1.0, 'Block': 0.15, 'Miss': -0.05, 'Catch': -1.1}
+DEFENSE_WEIGHTS = {'Catch': 1.1, 'Block': 0.3, 'Miss': 0.1, 'Hit': -1.0}
 
 # Tournament and playoff MVPs: bonus for each match won by the player's team
 # in which the player appeared
