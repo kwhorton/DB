@@ -203,6 +203,130 @@
         font-style: italic;
     }
 
+    /* Trophy case */
+    .trophy-case {
+        background: white;
+        padding: 25px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-bottom: 30px;
+    }
+
+    .trophy-case .as-of {
+        font-size: 13px;
+        font-weight: normal;
+        color: #999;
+        margin-left: 8px;
+    }
+
+    .trophy-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    .trophy-badge {
+        padding: 8px 14px;
+        border-radius: 20px;
+        background: #f3f4fd;
+        color: #4a4f9c;
+        font-weight: bold;
+        font-size: 14px;
+        cursor: default;
+    }
+
+    .trophy-badge.gold {
+        background: linear-gradient(135deg, #ffd89b 0%, #f5b041 100%);
+        color: #5a3d00;
+    }
+
+    .trophy-badge.star {
+        background: #fff8e1;
+        color: #8a6500;
+        border: 1px solid #f0e0a8;
+    }
+
+    .trophy-details {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 30px;
+        font-size: 14px;
+        color: #555;
+        margin-bottom: 16px;
+    }
+
+    .trophy-details h4 {
+        font-size: 12px;
+        text-transform: uppercase;
+        color: #888;
+        margin: 0 0 6px 0;
+    }
+
+    .trophy-details ul {
+        margin: 0;
+        padding-left: 18px;
+        line-height: 1.7;
+    }
+
+    .trophy-details a {
+        color: #667eea;
+        text-decoration: none;
+    }
+
+    .trophy-details a:hover {
+        text-decoration: underline;
+    }
+
+    .trophy-details .muted {
+        color: #999;
+    }
+
+    .race-strip {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+        border-top: 1px solid #eee;
+        padding-top: 16px;
+    }
+
+    .race-cell {
+        display: block;
+        padding: 10px 14px;
+        border-radius: 6px;
+        background: #f8f9fa;
+        text-decoration: none;
+        color: #333;
+    }
+
+    .race-cell:hover {
+        background: #eef0fd;
+    }
+
+    .race-cell .race-label {
+        font-size: 12px;
+        text-transform: uppercase;
+        color: #888;
+        font-weight: bold;
+    }
+
+    .race-cell .race-rank {
+        font-size: 22px;
+        font-weight: bold;
+        color: #667eea;
+    }
+
+    .race-cell .race-detail {
+        font-size: 12px;
+        color: #777;
+    }
+
+    .no-awards {
+        color: #999;
+        font-style: italic;
+        margin-bottom: 16px;
+    }
+
     /* Highlight different stat levels */
     .stat-high {
         color: #2e7d32;
@@ -226,6 +350,80 @@
     <h1>{{ player.name|full_name }}</h1>
     <div class="player-id">Player ID: {{ player.pid }}</div>
     <a href="/team/{{ team.team_name }}" class="player-team">{{ team.team_name }}</a>
+</div>
+
+{% set mm = trophies.match_mvps %}
+{% set match_mvp_total = mm['Head-to-head'] + mm['Tournament'] + mm['Playoffs'] %}
+<div class="trophy-case">
+    <div class="section-title">
+        🏆 Trophy Case
+        <span class="as-of">
+            {% if race_through is none %}preseason{% elif season_over %}through the regular season{% if trophies.playoff_awards %} and playoffs{% endif %}{% else %}through Week {{ "%g"|format(race_through) }}{% endif %}
+        </span>
+    </div>
+
+    {% if trophies.season_awards or trophies.playoff_awards or trophies.tournament_mvps or trophies.player_of_week or match_mvp_total %}
+    <div class="trophy-badges">
+        {% for title in trophies.season_awards %}
+        <span class="trophy-badge gold">🏆 {{ title }}</span>
+        {% endfor %}
+        {% for title in trophies.playoff_awards %}
+        <span class="trophy-badge gold">🥇 {{ title }}</span>
+        {% endfor %}
+        {% if trophies.tournament_mvps %}
+        <span class="trophy-badge star">⭐ Tournament MVP{% if trophies.tournament_mvps|length > 1 %} ×{{ trophies.tournament_mvps|length }}{% endif %}</span>
+        {% endif %}
+        {% if trophies.player_of_week %}
+        <span class="trophy-badge">📅 Player of the Week{% if trophies.player_of_week|length > 1 %} ×{{ trophies.player_of_week|length }}{% endif %}</span>
+        {% endif %}
+        {% if match_mvp_total %}
+        <span class="trophy-badge" title="{% for kind, n in mm.items() if n %}{{ kind }}: {{ n }}{% if not loop.last %} · {% endif %}{% endfor %}">Match MVP ×{{ match_mvp_total }}</span>
+        {% endif %}
+    </div>
+
+    {% if trophies.tournament_mvps or trophies.player_of_week %}
+    <div class="trophy-details">
+        {% if trophies.tournament_mvps %}
+        <div>
+            <h4>Tournament MVP</h4>
+            <ul>
+                {% for t in trophies.tournament_mvps %}
+                <li>
+                    <a href="/tournament/{{ t.id }}">Week {{ "%g"|format(t.week) }} · {{ t.type }}{% if t.subtype %} ({{ t.subtype }}){% endif %}</a>
+                    <span class="muted">· {{ "%.1f"|format(t.score) }} MVP pts{% if t.won %} · team won{% endif %}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        {% if trophies.player_of_week %}
+        <div>
+            <h4>Player of the Week</h4>
+            <ul>
+                {% for w in trophies.player_of_week %}
+                <li><a href="/schedule/{{ "%g"|format(w) }}">Week {{ "%g"|format(w) }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="no-awards">No awards yet.</div>
+    {% endif %}
+
+    {% if race %}
+    <div class="race-strip">
+        {% for kind, label in [('overall', 'MVP Race'), ('offense', 'Offensive Player'), ('defense', 'Defensive Player')] if race[kind] %}
+        {% set r = race[kind] %}
+        <a class="race-cell" href="/leaders?race={{ kind }}#race-table">
+            <div class="race-label">{{ label }}</div>
+            <div class="race-rank">{{ r.rank|ordinal }}</div>
+            <div class="race-detail">{{ r.div_rank|ordinal }} in {{ r.division }} · {{ "%+.1f"|format(r.above_avg) }} above avg</div>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
 </div>
 
 <div class="stats-container">

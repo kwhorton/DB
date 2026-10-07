@@ -18,7 +18,8 @@ for tier_data in all_tiers_data.values():
     backfill_game_records(tier_data['teams'], tier_data['schedule'], tier_data['all_tourneys'])
 
 # Impact scores and leaderboards for each tier, built once from the game logs
-tier_awards = {tier: TierAwards(data['teams'], data['schedule'])
+tier_awards = {tier: TierAwards(data['teams'], data['schedule'], data['all_tourneys'],
+                               data.get('playoff_rounds', []))
                for tier, data in all_tiers_data.items()}
 
 # Available tiers
@@ -390,12 +391,34 @@ def player_page(pid):
 
     stats_for_week = get_player_ranks(teams,current_week)
     current_stats = [stat for stat in stats_for_week if stat['pid'] == pid]
-    
+
+    # Trophy case: awards won and season-race standing as of current_week
+    awards = tier_awards[session.get('current_tier', 'Tier 1')]
+    trophies = awards.trophies(pid, current_week)
+    trophies['tournament_mvps'] = [{
+        'id': tourney.id,
+        'week': tourney.week,
+        'type': getattr(tourney, 'type', None),
+        'subtype': subtype_of(tourney, tier_data['all_tourneys']),
+        'won': tourney.finish_order[0] is player_team,
+        'score': row['score']
+    } for tourney, row in trophies['tournament_mvps']]
+    played_weeks = awards.weeks_through(current_week)
+    race = {}
+    for kind in KINDS:
+        row = next((r for r in awards.season_race(current_week, kind) if r['pid'] == pid), None)
+        if row and row['games']:
+            race[kind] = row
+
     return render_template('player.html',
                          player=player,
                          team=player_team,
                          current_stats=current_stats[0],
-                         stats_history=stats_history)
+                         stats_history=stats_history,
+                         trophies=trophies,
+                         race=race,
+                         race_through=played_weeks[-1] if played_weeks else None,
+                         season_over=bool(played_weeks) and played_weeks[-1] == awards.weeks[-1])
 
 
 def render_match_animation(match, match_index, game_index, tournament_id=None, playoff_round=None):

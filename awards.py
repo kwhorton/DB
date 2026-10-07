@@ -39,6 +39,11 @@ HOT_WEEKS = 3
 
 KINDS = ('overall', 'offense', 'defense')
 
+# Season awards: the leader of each race once the regular season is over
+SEASON_AWARDS = {'overall': 'Season MVP',
+                 'offense': 'Offensive Player of the Year',
+                 'defense': 'Defensive Player of the Year'}
+
 # Rate stats only rank players who played at least this share of their
 # team's games, so bench players can't lead on a handful of throws
 QUALIFY_SHARE = 0.4
@@ -129,13 +134,14 @@ def _rank(rows, key):
     return ordered
 
 
-def match_mvp(match):
+def match_mvp(match, impact=None):
     """The winning team's best overall impact in this match, as
-    {'pid', 'player', 'team', 'impact'}; ties go to offense. None if unplayed."""
+    {'pid', 'player', 'team', 'impact'}; ties go to offense. None if unplayed.
+    Pass the match's impact if it has already been computed."""
     if match.winner is None:
         return None
     winners = match.team1 if match.winner == 1 else match.team2
-    impact = match_impact(match)
+    impact = impact if impact is not None else match_impact(match)
     candidates = [p for p in winners.players if p.pid in impact]
     if not candidates:
         return None
@@ -182,22 +188,46 @@ def playoff_mvp(playoff_rounds):
 
 
 class TierAwards:
-    """Season-to-date impact for one tier. Built once per tier when the app
-    loads; results for each (week, kind) are cached."""
+    """Season-to-date impact and awards for one tier. Built once per tier
+    when the app loads; results for each (week, kind) are cached."""
 
-    def __init__(self, teams, schedule):
+    def __init__(self, teams, schedule, all_tourneys=(), playoff_rounds=()):
         self.teams = teams
         self.team_of = {p.pid: team for team in teams for p in team.players}
         self.player_of = {p.pid: p for team in teams for p in team.players}
         self.weeks = sorted({m.week for m in schedule})
         self.by_week = {week: defaultdict(Impact) for week in self.weeks}
         self.team_games = {week: defaultdict(int) for week in self.weeks}
+        self.match_mvps = []        # (week, 'Head-to-head' / 'Tournament' / 'Playoffs', pid)
         for match in schedule:
-            for pid, line in match_impact(match).items():
+            impact = match_impact(match)
+            for pid, line in impact.items():
                 self.by_week[match.week][pid].add(line)
             for team in (match.team1, match.team2):
                 self.team_games[match.week][team.team_name] += len(match.games)
+            mvp = match_mvp(match, impact)
+            if mvp:
+                kind = 'Head-to-head' if match.match_type == 'H' else 'Tournament'
+                self.match_mvps.append((match.week, kind, mvp['pid']))
+        for rnd in playoff_rounds:
+            for match in rnd.matches:
+                mvp = match_mvp(match)
+                if mvp:
+                    self.match_mvps.append((rnd.week, 'Playoffs', mvp['pid']))
+
+        self.tournament_mvps = [(t, row) for t in all_tourneys
+                                for row in event_leaders(t.matches)[:1]]
+        # Playoff awards and the week they're decided (the last round's)
+        self.playoff_awards = {}
+        if playoff_rounds:
+            everything = [m for rnd in playoff_rounds for m in rnd.matches]
+            self.playoff_awards = {
+                'Playoff MVP': event_leaders(everything)[0]['pid'],
+                'Final Four MVP': event_leaders(playoff_rounds[-1].matches)[0]['pid'],
+            }
+            self.playoffs_decided = playoff_rounds[-1].week
         self._race = {}
+        self._week_top = {}
 
     def weeks_through(self, week):
         return [w for w in self.weeks if w <= week]
@@ -278,6 +308,42 @@ class TierAwards:
                 for pid, line in lines.items()]
         rows = _rank(rows, key=lambda r: (-r['above_avg'], -r['games'], r['pid']))
         return [r for r in rows if division is None or r['division'] == division]
+
+    def player_of_week_pid(self, week):
+        if week not in self._week_top:
+            rows = self.player_of_week(week)
+            self._week_top[week] = rows[0]['pid'] if rows else None
+        return self._week_top[week]
+
+    def trophies(self, pid, week):
+        """Awards won by pid in games through week:
+          match_mvps        {'Head-to-head': n, 'Tournament': n, 'Playoffs': n}
+          tournament_mvps   [(tourney, leaders row)]
+          player_of_week    [week, ...]
+          playoff_awards    ['Playoff MVP', 'Final Four MVP'], once the
+                            playoffs are over
+          season_awards     SEASON_AWARDS titles, once the regular season is over"""
+        match_mvps = {'Head-to-head': 0, 'Tournament': 0, 'Playoffs': 0}
+        for w, kind, mvp in self.match_mvps:
+            if mvp == pid and w <= week:
+                match_mvps[kind] += 1
+
+        playoff_awards = [title for title, winner in self.playoff_awards.items()
+                          if winner == pid and self.playoffs_decided <= week]
+
+        weeks = self.weeks_through(week)
+        season_over = bool(weeks) and weeks[-1] == self.weeks[-1]
+        season_awards = [title for kind, title in SEASON_AWARDS.items()
+                         if season_over and self.season_race(week, kind)[0]['pid'] == pid]
+
+        return {
+            'match_mvps': match_mvps,
+            'tournament_mvps': [(t, row) for t, row in self.tournament_mvps
+                                if row['pid'] == pid and t.week <= week],
+            'player_of_week': [w for w in weeks if self.player_of_week_pid(w) == pid],
+            'playoff_awards': playoff_awards,
+            'season_awards': season_awards,
+        }
 
     def stat_lines(self, week):
         """One row per player of regular-season counting stats and rates
