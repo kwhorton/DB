@@ -63,11 +63,6 @@ STAT_CATEGORIES = [
     ('dodge_rate',    'Dodge Rate',      'Defense', 'pct',    True),
     ('survival_rate', 'Survival Rate',   'Defense', 'pct',    True),
     ('improvement',   'Most Improved',   'Improvement', 'signed2', False),  # qualifies in improvement_lines
-    ('rating',        'Overall Rating',  'Ratings', 'rating', False),
-    ('aim',           'Aim',             'Ratings', 'rating', False),
-    ('speed',         'Speed',           'Ratings', 'rating', False),
-    ('throw',         'Throw',           'Ratings', 'rating', False),
-    ('hands',         'Hands',           'Ratings', 'rating', False),
 ]
 
 
@@ -427,13 +422,13 @@ class TierAwards:
 
     def stat_lines(self, week):
         """One row per player of regular-season counting stats and rates
-        through week (from player.all_stats), plus ratings as of week."""
+        through week (from player.all_stats). Player ratings are hidden
+        simulation values, so nothing here uses them."""
         weeks = set(self.weeks_through(week))
         team_games = defaultdict(int)
         for w in weeks:
             for name, games in self.team_games[w].items():
                 team_games[name] += games
-        rating_week = max(week, 1)  # Week 1's entry holds start-of-season ratings
         improvement = {r['pid']: r['improvement'] for r in self.improvement_lines(week)}
 
         rows = []
@@ -443,9 +438,6 @@ class TierAwards:
             tot = {k: sum(s[k] for s in played) for k in
                    ('GP', 'Throws', 'Hits', 'Blocked', 'Caught',
                     'Targeted', 'Hit', 'Blocks', 'Catches')}
-            rated = [s for s in player.all_stats if s['Week'] <= rating_week]
-            now = rated[-1] if rated else player.get_start_stats()
-            ratings = {k.lower(): now[k] for k in ('Aim', 'Speed', 'Throw', 'Hands')}
 
             contacts_for = tot['Hits'] + tot['Blocked'] + tot['Caught']
             contacts_against = tot['Hit'] + tot['Blocks'] + tot['Catches']
@@ -461,8 +453,6 @@ class TierAwards:
                 'catch_rate': _rate(tot['Catches'], tot['Targeted']),
                 'dodge_rate': _rate(tot['Targeted'] - contacts_against, tot['Targeted']),
                 'survival_rate': _rate(tot['Targeted'] - tot['Hit'], tot['Targeted']),
-                **ratings,
-                'rating': sum(ratings.values()) / 4,
                 'improvement': improvement.get(pid),
             })
         return rows
