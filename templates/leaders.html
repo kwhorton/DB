@@ -7,6 +7,7 @@
     {%- elif fmt == 'dec' -%}{{ "%.2f"|format(value) }}
     {%- elif fmt == 'pct' -%}{{ "%.1f"|format(value * 100) }}%
     {%- elif fmt == 'signed' -%}{{ "%+.1f"|format(value) }}
+    {%- elif fmt == 'signed2' -%}{{ "%+.2f"|format(value) }}
     {%- else -%}{{ "%.1f"|format(value) }}
     {%- endif -%}
 {%- endmacro %}
@@ -395,7 +396,9 @@
 
     <h2>Stat Leaders</h2>
     <p class="section-note">
-        Rate stats need {{ qualify_pct }}% of the team's games played. Ratings are as of the selected week.
+        Rate stats need {{ qualify_pct }}% of the team's games played. Most Improved is the rise in per-game
+        impact above average from the first half of the weeks played to the second (needs {{ qualify_pct }}%
+        of the team's games in both).
     </p>
     {% for group in stat_groups %}
     <h3>{{ group.name }}</h3>

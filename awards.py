@@ -43,6 +43,10 @@ KINDS = ('overall', 'offense', 'defense')
 SEASON_AWARDS = {'overall': 'Season MVP',
                  'offense': 'Offensive Player of the Year',
                  'defense': 'Defensive Player of the Year'}
+MOST_IMPROVED = 'Most Improved Player'     # biggest rise in per-game impact
+FINALISTS = 3                               # shown for each season award
+ALL_TEAM_SIZE = 5                           # the number of players on court
+ALL_TEAMS = ['1st Team', '2nd Team']        # All-Tier teams, by overall race
 
 # Rate stats only rank players who played at least this share of their
 # team's games, so bench players can't lead on a handful of throws
@@ -58,12 +62,7 @@ STAT_CATEGORIES = [
     ('catch_rate',    'Catch Rate',      'Defense', 'pct',    True),
     ('dodge_rate',    'Dodge Rate',      'Defense', 'pct',    True),
     ('survival_rate', 'Survival Rate',   'Defense', 'pct',    True),
-    ('rating',        'Overall Rating',  'Ratings', 'rating', False),
-    ('aim',           'Aim',             'Ratings', 'rating', False),
-    ('speed',         'Speed',           'Ratings', 'rating', False),
-    ('throw',         'Throw',           'Ratings', 'rating', False),
-    ('hands',         'Hands',           'Ratings', 'rating', False),
-    ('improvement',   'Most Improved',   'Ratings', 'signed', False),
+    ('improvement',   'Most Improved',   'Improvement', 'signed2', False),  # qualifies in improvement_lines
 ]
 
 
@@ -332,9 +331,15 @@ class TierAwards:
                           if winner == pid and self.playoffs_decided <= week]
 
         weeks = self.weeks_through(week)
-        season_over = bool(weeks) and weeks[-1] == self.weeks[-1]
-        season_awards = [title for kind, title in SEASON_AWARDS.items()
-                         if season_over and self.season_race(week, kind)[0]['pid'] == pid]
+        season_awards = []
+        if weeks and weeks[-1] == self.weeks[-1]:   # the regular season is over
+            honors = self.season_honors(week)
+            season_awards = [a['title'] for a in honors['awards']
+                             if a['finalists'] and a['finalists'][0]['pid'] == pid]
+            season_awards += [f'All-Tier {name}' for name, team in honors['all_tier'] if
+                              pid in {r['pid'] for r in team}]
+            season_awards += [f'All-{division} Team' for division, team in honors['all_division'] if
+                              pid in {r['pid'] for r in team}]
 
         return {
             'match_mvps': match_mvps,
@@ -345,15 +350,86 @@ class TierAwards:
             'season_awards': season_awards,
         }
 
+    def season_honors(self, week):
+        """Season awards as of week (final once the regular season is over):
+          awards        [{title, kind, finalists}] - the season races and Most
+                        Improved; finalists are race rows (or, for Most
+                        Improved, stat_lines rows), the first one the winner
+          all_tier      [(team name, rows)] - the overall race's top 5, next 5
+          all_division  [(division, rows)] - each division's overall top 5
+        None before any games."""
+        weeks = self.weeks_through(week)
+        if not weeks:
+            return None
+        week = weeks[-1]
+        races = {kind: self.season_race(week, kind) for kind in KINDS}
+        overall = races['overall']
+        improved = self.improvement_lines(week)
+        awards = [{'title': SEASON_AWARDS[kind], 'kind': kind, 'finalists': races[kind][:FINALISTS]}
+                  for kind in KINDS]
+        awards.append({'title': MOST_IMPROVED, 'kind': 'improvement',
+                       'finalists': improved[:FINALISTS]})
+        divisions = sorted({r['division'] for r in overall})
+        return {
+            'week': week,
+            'final': week == self.weeks[-1],
+            'awards': awards,
+            'all_tier': [(name, overall[i * ALL_TEAM_SIZE:(i + 1) * ALL_TEAM_SIZE])
+                         for i, name in enumerate(ALL_TEAMS)],
+            'all_division': [(division, [r for r in overall if r['division'] == division][:ALL_TEAM_SIZE])
+                             for division in divisions],
+            'halves': self.halves(week),
+        }
+
+    def halves(self, week):
+        """The weeks played through week, split into a first and second half."""
+        weeks = self.weeks_through(week)
+        mid = len(weeks) // 2
+        return weeks[:mid], weeks[mid:]
+
+    def improvement_lines(self, week):
+        """Players ranked by the rise in their per-game overall impact from
+        the first half of the weeks played to the second. Each half is
+        measured against that half's tier average, and a player must play
+        QUALIFY_SHARE of the team's games in both halves. Rows: pid, player,
+        team, division, games, before, after, improvement (per game)."""
+        halves = self.halves(week)
+        if not halves[0]:
+            return []
+        lines, avgs, team_games = [], [], []
+        for half in halves:
+            totals = sum_impacts(self.by_week[w] for w in half)
+            lines.append(totals)
+            avgs.append(self.baseline(totals, 'overall'))
+            games = defaultdict(int)
+            for w in half:
+                for name, n in self.team_games[w].items():
+                    games[name] += n
+            team_games.append(games)
+
+        rows = []
+        for pid, team in self.team_of.items():
+            first, second = (half.get(pid) for half in lines)
+            if not all(line and line.games >= QUALIFY_SHARE * games[team.team_name]
+                       for line, games in zip((first, second), team_games)):
+                continue
+            before = first.overall / first.games - avgs[0]
+            after = second.overall / second.games - avgs[1]
+            rows.append({'pid': pid, 'player': self.player_of[pid], 'team': team,
+                         'division': team.division, 'games': first.games + second.games,
+                         'before': before, 'after': after, 'improvement': after - before})
+        return _rank(rows, key=lambda r: (-r['improvement'], -r['games'], r['pid']))
+
     def stat_lines(self, week):
         """One row per player of regular-season counting stats and rates
-        through week (from player.all_stats), plus ratings as of week."""
+        through week (from player.all_stats). Player ratings are hidden
+        simulation values, so nothing here uses them."""
         weeks = set(self.weeks_through(week))
         team_games = defaultdict(int)
         for w in weeks:
             for name, games in self.team_games[w].items():
                 team_games[name] += games
-        rating_week = max(week, 1)  # Week 1's entry holds start-of-season ratings
+        improvement = {r['pid']: r['improvement'] for r in self.improvement_lines(week)}
 
         rows = []
         for pid, player in self.player_of.items():
@@ -362,10 +438,6 @@ class TierAwards:
             tot = {k: sum(s[k] for s in played) for k in
                    ('GP', 'Throws', 'Hits', 'Blocked', 'Caught',
                     'Targeted', 'Hit', 'Blocks', 'Catches')}
-            rated = [s for s in player.all_stats if s['Week'] <= rating_week]
-            now = rated[-1] if rated else player.get_start_stats()
-            ratings = {k.lower(): now[k] for k in ('Aim', 'Speed', 'Throw', 'Hands')}
-            start = player.get_start_stats()
 
             contacts_for = tot['Hits'] + tot['Blocked'] + tot['Caught']
             contacts_against = tot['Hit'] + tot['Blocks'] + tot['Catches']
@@ -381,9 +453,7 @@ class TierAwards:
                 'catch_rate': _rate(tot['Catches'], tot['Targeted']),
                 'dodge_rate': _rate(tot['Targeted'] - contacts_against, tot['Targeted']),
                 'survival_rate': _rate(tot['Targeted'] - tot['Hit'], tot['Targeted']),
-                **ratings,
-                'rating': sum(ratings.values()) / 4,
-                'improvement': (sum(ratings.values()) - sum(start.values())) / 4,
+                'improvement': improvement.get(pid),
             })
         return rows
 

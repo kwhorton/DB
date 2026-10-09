@@ -683,5 +683,29 @@ def leaders_page():
                            hot_weeks=HOT_WEEKS)
 
 
+@app.route('/awards')
+def awards_page():
+    current_week = session.get('current_week', 1)
+    tier_data = get_current_tier_data()
+    awards = tier_awards[session.get('current_tier', 'Tier 1')]
+    honors = awards.season_honors(current_week)
+
+    # Postseason honors, once the Final Four has been played
+    postseason = None
+    rounds = tier_data.get('playoff_rounds', [])
+    if rounds and rounds[-1].week <= current_week:
+        postseason = {
+            'champion': rounds[-1].finish_order[0].team_name,
+            'playoff_mvp': event_leaders_info([m for rnd in rounds for m in rnd.matches], top=1)[0],
+            'final_four_mvp': event_leaders_info(rounds[-1].matches, top=1)[0],
+        }
+
+    return render_template('awards.html',
+                           honors=honors,
+                           qualify_pct=round(QUALIFY_SHARE * 100),
+                           postseason=postseason,
+                           has_playoffs=bool(rounds))
+
+
 if __name__ == "__main__":
     app.run(debug=True)
