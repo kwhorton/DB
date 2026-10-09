@@ -8,7 +8,7 @@
 
 {% macro award_value(award, row, unit=true) -%}
     {%- if award.kind == 'improvement' -%}
-        {{ "%+.1f"|format(row.improvement) }}{% if unit %} rating{% endif %}
+        {{ "%+.2f"|format(row.improvement) }}{% if unit %} per game{% endif %}
     {%- else -%}
         {{ "%+.1f"|format(row.above_avg) }}{% if unit %} above avg{% endif %}
     {%- endif -%}
@@ -248,11 +248,18 @@
 
     <h2>Major Awards</h2>
     <p class="section-note">
-        The leader of each season race (points above the {{ current_tier }} average); Most Improved is the
-        biggest gain in overall rating since the start of the season.
+        The leader of each season race (points above the {{ current_tier }} average).
+        {% if honors.halves[0] %}
+        Most Improved is the biggest rise in per-game impact above average from
+        Week{{ 's ' ~ "%g"|format(honors.halves[0][0]) ~ '–' if honors.halves[0]|length > 1 else ' ' }}{{ "%g"|format(honors.halves[0][-1]) }} to
+        Week{{ 's ' ~ "%g"|format(honors.halves[1][0]) ~ '–' if honors.halves[1]|length > 1 else ' ' }}{{ "%g"|format(honors.halves[1][-1]) }},
+        among players in at least {{ qualify_pct }}% of their team's games in both.
+        {% else %}
+        Most Improved is decided once at least two weeks have been played.
+        {% endif %}
     </p>
     <div class="award-grid">
-        {% for award in honors.awards %}
+        {% for award in honors.awards if award.finalists %}
         {% set w = award.finalists[0] %}
         <div class="card">
             <div class="card-header gold">🏆 {{ award.title }}</div>
@@ -262,7 +269,7 @@
                 <div class="value">{{ award_value(award, w) }}</div>
                 <div class="detail">
                     {% if award.kind == 'improvement' %}
-                    {{ "%.1f"|format(w.rating - w.improvement) }} → {{ "%.1f"|format(w.rating) }}
+                    {{ "%+.2f"|format(w.before) }} → {{ "%+.2f"|format(w.after) }} above avg per game
                     {% else %}
                     {{ w.games }} games · {{ "%+.2f"|format(w.above_avg / w.games) }} above avg per game
                     {% endif %}

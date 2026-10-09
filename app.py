@@ -702,6 +702,7 @@ def awards_page():
 
     return render_template('awards.html',
                            honors=honors,
+                           qualify_pct=round(QUALIFY_SHARE * 100),
                            postseason=postseason,
                            has_playoffs=bool(rounds))
 
