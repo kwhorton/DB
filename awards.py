@@ -43,6 +43,10 @@ KINDS = ('overall', 'offense', 'defense')
 SEASON_AWARDS = {'overall': 'Season MVP',
                  'offense': 'Offensive Player of the Year',
                  'defense': 'Defensive Player of the Year'}
+MOST_IMPROVED = 'Most Improved Player'     # biggest overall rating gain
+FINALISTS = 3                               # shown for each season award
+ALL_TEAM_SIZE = 5                           # the number of players on court
+ALL_TEAMS = ['1st Team', '2nd Team']        # All-Tier teams, by overall race
 
 # Rate stats only rank players who played at least this share of their
 # team's games, so bench players can't lead on a handful of throws
@@ -332,9 +336,14 @@ class TierAwards:
                           if winner == pid and self.playoffs_decided <= week]
 
         weeks = self.weeks_through(week)
-        season_over = bool(weeks) and weeks[-1] == self.weeks[-1]
-        season_awards = [title for kind, title in SEASON_AWARDS.items()
-                         if season_over and self.season_race(week, kind)[0]['pid'] == pid]
+        season_awards = []
+        if weeks and weeks[-1] == self.weeks[-1]:   # the regular season is over
+            honors = self.season_honors(week)
+            season_awards = [a['title'] for a in honors['awards'] if a['finalists'][0]['pid'] == pid]
+            season_awards += [f'All-Tier {name}' for name, team in honors['all_tier'] if
+                              pid in {r['pid'] for r in team}]
+            season_awards += [f'All-{division} Team' for division, team in honors['all_division'] if
+                              pid in {r['pid'] for r in team}]
 
         return {
             'match_mvps': match_mvps,
@@ -343,6 +352,36 @@ class TierAwards:
             'player_of_week': [w for w in weeks if self.player_of_week_pid(w) == pid],
             'playoff_awards': playoff_awards,
             'season_awards': season_awards,
+        }
+
+    def season_honors(self, week):
+        """Season awards as of week (final once the regular season is over):
+          awards        [{title, kind, finalists}] - the season races and Most
+                        Improved; finalists are race rows (or, for Most
+                        Improved, stat_lines rows), the first one the winner
+          all_tier      [(team name, rows)] - the overall race's top 5, next 5
+          all_division  [(division, rows)] - each division's overall top 5
+        None before any games."""
+        weeks = self.weeks_through(week)
+        if not weeks:
+            return None
+        week = weeks[-1]
+        races = {kind: self.season_race(week, kind) for kind in KINDS}
+        overall = races['overall']
+        improved = sorted(self.stat_lines(week), key=lambda r: (-r['improvement'], r['pid']))
+        awards = [{'title': SEASON_AWARDS[kind], 'kind': kind, 'finalists': races[kind][:FINALISTS]}
+                  for kind in KINDS]
+        awards.append({'title': MOST_IMPROVED, 'kind': 'improvement',
+                       'finalists': improved[:FINALISTS]})
+        divisions = sorted({r['division'] for r in overall})
+        return {
+            'week': week,
+            'final': week == self.weeks[-1],
+            'awards': awards,
+            'all_tier': [(name, overall[i * ALL_TEAM_SIZE:(i + 1) * ALL_TEAM_SIZE])
+                         for i, name in enumerate(ALL_TEAMS)],
+            'all_division': [(division, [r for r in overall if r['division'] == division][:ALL_TEAM_SIZE])
+                             for division in divisions],
         }
 
     def stat_lines(self, week):

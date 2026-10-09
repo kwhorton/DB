@@ -1,0 +1,365 @@
+{% extends "base.html" %}
+
+{% block title %}Season Awards{% endblock %}
+
+{% macro player_link(row, full=false) -%}
+    <a class="player-link" href="/player/{{ row.pid }}">{{ row.player.name|full_name if full else row.player.name|short_name }}</a>
+{%- endmacro %}
+
+{% macro award_value(award, row, unit=true) -%}
+    {%- if award.kind == 'improvement' -%}
+        {{ "%+.1f"|format(row.improvement) }}{% if unit %} rating{% endif %}
+    {%- else -%}
+        {{ "%+.1f"|format(row.above_avg) }}{% if unit %} above avg{% endif %}
+    {%- endif -%}
+{%- endmacro %}
+
+{% block head %}
+    <style>
+        .awards-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 6px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #777;
+            margin-bottom: 20px;
+        }
+
+        .projected-note {
+            max-width: 700px;
+            margin: 0 auto 10px;
+            padding: 10px 16px;
+            border-radius: 6px;
+            background: #fff8e1;
+            border: 1px solid #f0e0a8;
+            color: #7a5c00;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        h2 {
+            color: #333;
+            margin: 35px 0 15px;
+        }
+
+        .section-note {
+            color: #777;
+            font-size: 14px;
+            margin: -8px 0 15px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 16px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .card-header.gold {
+            background: linear-gradient(135deg, #ffd89b 0%, #f5b041 100%);
+            color: #5a3d00;
+        }
+
+        .empty {
+            padding: 30px;
+            text-align: center;
+            color: #999;
+        }
+
+        /* Award cards */
+        .award-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr));
+            gap: 20px;
+        }
+
+        .winner {
+            padding: 18px 16px 12px;
+            text-align: center;
+        }
+
+        .winner .name {
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        .winner .name a {
+            color: #333;
+            text-decoration: none;
+        }
+
+        .winner .name a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        .winner .team {
+            margin-top: 4px;
+        }
+
+        .winner .team a, .team-link {
+            color: #999;
+            font-size: 13px;
+            text-decoration: none;
+        }
+
+        .winner .team a:hover, .team-link:hover {
+            color: #667eea;
+        }
+
+        .winner .value {
+            margin-top: 8px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .winner .detail {
+            font-size: 12px;
+            color: #888;
+            margin-top: 2px;
+        }
+
+        .finalists {
+            border-top: 1px solid #eee;
+            padding: 8px 16px 12px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .finalists-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #999;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .finalist {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 2px 0;
+        }
+
+        .finalist-value {
+            white-space: nowrap;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .player-link {
+            color: #333;
+            font-weight: 500;
+            text-decoration: none;
+        }
+
+        .player-link:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        /* Teams */
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+            gap: 20px;
+        }
+
+        .team-grid.divisions {
+            grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr));
+        }
+
+        .team-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .team-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+
+        .team-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .team-table .rank {
+            width: 28px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .team-table .num {
+            text-align: right;
+            white-space: nowrap;
+            color: #555;
+        }
+
+        .team-table .team-link {
+            display: block;
+        }
+
+        /* Postseason */
+        .postseason-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr));
+            gap: 20px;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="awards-container">
+    <h1>Season Awards</h1>
+    <div class="subtitle">
+        {{ current_tier }} ·
+        {% if not honors %}no games played yet
+        {% elif honors.final %}regular season final
+        {% else %}through Week {{ "%g"|format(honors.week) }}{% endif %}
+    </div>
+
+    {% if not honors %}
+    <div class="card"><div class="empty">Awards are tracked once Week 1 has been played.</div></div>
+    {% else %}
+
+    {% if not honors.final %}
+    <div class="projected-note">
+        <strong>Projected:</strong> if the season ended after Week {{ "%g"|format(honors.week) }}.
+        Awards are final after Week 16.
+    </div>
+    {% endif %}
+
+    <h2>Major Awards</h2>
+    <p class="section-note">
+        The leader of each season race (points above the {{ current_tier }} average); Most Improved is the
+        biggest gain in overall rating since the start of the season.
+    </p>
+    <div class="award-grid">
+        {% for award in honors.awards %}
+        {% set w = award.finalists[0] %}
+        <div class="card">
+            <div class="card-header gold">🏆 {{ award.title }}</div>
+            <div class="winner">
+                <div class="name">{{ player_link(w, full=true) }}</div>
+                <div class="team"><a href="/team/{{ w.team.team_name }}">{{ w.team.team_name }} · {{ w.division }}</a></div>
+                <div class="value">{{ award_value(award, w) }}</div>
+                <div class="detail">
+                    {% if award.kind == 'improvement' %}
+                    {{ "%.1f"|format(w.rating - w.improvement) }} → {{ "%.1f"|format(w.rating) }}
+                    {% else %}
+                    {{ w.games }} games · {{ "%+.2f"|format(w.above_avg / w.games) }} above avg per game
+                    {% endif %}
+                </div>
+            </div>
+            <div class="finalists">
+                <div class="finalists-title">Finalists</div>
+                {% for row in award.finalists[1:] %}
+                <div class="finalist">
+                    <span>{{ loop.index + 1 }}. {{ player_link(row) }} <span class="team-link" style="display: inline;">{{ row.team.team_name }}</span></span>
+                    <span class="finalist-value">{{ award_value(award, row, unit=false) }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <h2>All-{{ current_tier }} Teams</h2>
+    <p class="section-note">The top players in the MVP race, five to a team (the number on court).</p>
+    <div class="team-grid">
+        {% for name, team in honors.all_tier %}
+        <div class="card">
+            <div class="card-header">{{ name }}</div>
+            <table class="team-table">
+                {% for row in team %}
+                <tr>
+                    <td class="rank">{{ row.rank }}</td>
+                    <td>
+                        {{ player_link(row, full=true) }}
+                        <a class="team-link" href="/team/{{ row.team.team_name }}">{{ row.team.team_name }} · {{ row.division }}</a>
+                    </td>
+                    <td class="num">{{ "%+.1f"|format(row.above_avg) }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+        {% endfor %}
+    </div>
+
+    <h2>All-Division Teams</h2>
+    <p class="section-note">Each division's top five in the MVP race.</p>
+    <div class="team-grid divisions">
+        {% for division, team in honors.all_division %}
+        <div class="card">
+            <div class="card-header">All-{{ division }}</div>
+            <table class="team-table">
+                {% for row in team %}
+                <tr>
+                    <td class="rank">{{ row.div_rank }}</td>
+                    <td>
+                        {{ player_link(row) }}
+                        <a class="team-link" href="/team/{{ row.team.team_name }}">{{ row.team.team_name }}</a>
+                    </td>
+                    <td class="num">{{ "%+.1f"|format(row.above_avg) }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+        {% endfor %}
+    </div>
+
+    <h2>Postseason</h2>
+    {% if postseason %}
+    <div class="postseason-grid">
+        <div class="card">
+            <div class="card-header gold">🏆 Champion</div>
+            <div class="winner">
+                <div class="name"><a href="/team/{{ postseason.champion }}">{{ postseason.champion }}</a></div>
+                <div class="detail"><a class="team-link" href="/playoffs">Playoff bracket →</a></div>
+            </div>
+        </div>
+        {% for title, mvp in [('Playoff MVP', postseason.playoff_mvp), ('Final Four MVP', postseason.final_four_mvp)] %}
+        <div class="card">
+            <div class="card-header gold">🥇 {{ title }}</div>
+            <div class="winner">
+                <div class="name"><a href="/player/{{ mvp.pid }}">{{ mvp.name }}</a></div>
+                <div class="team"><a href="/team/{{ mvp.team }}">{{ mvp.team }}</a></div>
+                <div class="value">{{ "%.1f"|format(mvp.score) }} MVP pts</div>
+                <div class="detail">
+                    {{ mvp.match_wins }} match win{{ 's' if mvp.match_wins != 1 }} ·
+                    {{ mvp.hits }} hit{{ 's' if mvp.hits != 1 }} ·
+                    {{ mvp.catches }} catch{{ 'es' if mvp.catches != 1 }}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card">
+        <div class="empty">
+            {% if has_playoffs %}Decided once the Final Four has been played.
+            {% else %}This season was simulated without playoffs.{% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% endif %}
+</div>
+{% endblock %}
