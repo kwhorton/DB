@@ -2,6 +2,18 @@
 
 Every throw in game.log scores for two players: the thrower earns offense
 points and the target earns defense points. Overall = offense + defense.
+How much a throw is worth depends on the scoring:
+
+  Classic         fixed points per throw result (OFFENSE_WEIGHTS and
+                  DEFENSE_WEIGHTS)
+  Win probability the win probability the throw added for the thrower's
+                  team (winprob.py), in units of an average hit; the target
+                  loses the same. A hit at 1 v 1 is worth far more than one
+                  in a 5 v 1 blowout, and a catch is worth more when it
+                  brings a teammate back. The table is built from the whole
+                  saved season, so unlike the averages below it does see
+                  later games (it barely moves: one built from Weeks 1-3
+                  alone is within 0.01 on average).
 
   Match MVP       best overall impact on the winning team
   Tournament MVP  best overall impact across a tournament, from any team,
@@ -19,6 +31,8 @@ Run `python awards.py` for a summary of each tier in the saved season.
 """
 from collections import defaultdict
 from dataclasses import dataclass
+
+from winprob import WinProb, game_states
 
 # Points per throw result, from the thrower's side and the target's side.
 # A Miss is a dodge for the target; a Block is a blocked throw for the
@@ -89,19 +103,48 @@ class Impact:
         self.catches += other.catches
 
 
-def game_impact(game):
+class ClassicScoring:
+    """Fixed points per throw result."""
+    name = 'Classic'
+
+    def throw_points(self, game):
+        """[(play, thrower's points, target's points)] for each throw."""
+        return [(play, OFFENSE_WEIGHTS[play['Result']], DEFENSE_WEIGHTS[play['Result']])
+                for play in game.log if play['Result'] is not None]
+
+
+class WinProbScoring:
+    """Win probability added, in units of an average hit."""
+    name = 'Win Probability'
+
+    def __init__(self, games):
+        self.wp = WinProb(games)
+
+    def throw_points(self, game):
+        states = game_states(game)
+        team1 = {p.pid for p in game.players1}
+        points = []
+        for before, after, play in zip(states, states[1:], game.log[1:]):
+            value = (self.wp(after) - self.wp(before)) / self.wp.hit_value
+            if play['Thrower'] not in team1:
+                value = -value
+            points.append((play, value, -value))
+        return points
+
+
+CLASSIC = ClassicScoring()
+
+
+def game_impact(game, scoring=CLASSIC):
     """{pid: Impact} for one game. Everyone on court counts one game played,
     whether or not they threw or were targeted."""
     impact = {player.pid: Impact(games=1) for player in game.players1 + game.players2}
-    for play in game.log:
-        result = play['Result']
-        if result is None:          # opening entry, before any throw
-            continue
-        impact[play['Thrower']].offense += OFFENSE_WEIGHTS[result]
-        impact[play['Target']].defense += DEFENSE_WEIGHTS[result]
-        if result == 'Hit':
+    for play, offense, defense in scoring.throw_points(game):
+        impact[play['Thrower']].offense += offense
+        impact[play['Target']].defense += defense
+        if play['Result'] == 'Hit':
             impact[play['Thrower']].hits += 1
-        elif result == 'Catch':
+        elif play['Result'] == 'Catch':
             impact[play['Target']].catches += 1
     return impact
 
@@ -115,9 +158,9 @@ def sum_impacts(impacts):
     return total
 
 
-def match_impact(match):
+def match_impact(match, scoring=CLASSIC):
     """{pid: Impact} summed over the games of one match."""
-    return sum_impacts(game_impact(game) for game in match.games)
+    return sum_impacts(game_impact(game, scoring) for game in match.games)
 
 
 def _rate(num, den):
@@ -133,14 +176,14 @@ def _rank(rows, key):
     return ordered
 
 
-def match_mvp(match, impact=None):
+def match_mvp(match, impact=None, scoring=CLASSIC):
     """The winning team's best overall impact in this match, as
     {'pid', 'player', 'team', 'impact'}; ties go to offense. None if unplayed.
     Pass the match's impact if it has already been computed."""
     if match.winner is None:
         return None
     winners = match.team1 if match.winner == 1 else match.team2
-    impact = impact if impact is not None else match_impact(match)
+    impact = impact if impact is not None else match_impact(match, scoring)
     candidates = [p for p in winners.players if p.pid in impact]
     if not candidates:
         return None
@@ -148,7 +191,7 @@ def match_mvp(match, impact=None):
     return {'pid': player.pid, 'player': player, 'team': winners, 'impact': impact[player.pid]}
 
 
-def event_leaders(matches, win_bonus=MATCH_WIN_BONUS):
+def event_leaders(matches, win_bonus=MATCH_WIN_BONUS, scoring=CLASSIC):
     """Ranked rows for a set of matches (a tournament, a playoff round...):
     overall impact plus win_bonus for every match won in which the player
     appeared. The first row is the event MVP."""
@@ -156,7 +199,7 @@ def event_leaders(matches, win_bonus=MATCH_WIN_BONUS):
     wins = defaultdict(int)
     team_of, players = {}, {}
     for match in matches:
-        impact = match_impact(match)
+        impact = match_impact(match, scoring)
         winners = match.get_wl_teams()[0]
         for team in (match.team1, match.team2):
             for player in team.players:
@@ -175,14 +218,14 @@ def event_leaders(matches, win_bonus=MATCH_WIN_BONUS):
     return _rank(rows, key=lambda r: (-r['score'], -r['impact'].offense, r['pid']))
 
 
-def tournament_mvp(tourney):
-    rows = event_leaders(tourney.matches)
+def tournament_mvp(tourney, scoring=CLASSIC):
+    rows = event_leaders(tourney.matches, scoring=scoring)
     return rows[0] if rows else None
 
 
-def playoff_mvp(playoff_rounds):
+def playoff_mvp(playoff_rounds, scoring=CLASSIC):
     """MVP across every playoff round."""
-    rows = event_leaders([m for rnd in playoff_rounds for m in rnd.matches])
+    rows = event_leaders([m for rnd in playoff_rounds for m in rnd.matches], scoring=scoring)
     return rows[0] if rows else None
 
 
@@ -190,8 +233,9 @@ class TierAwards:
     """Season-to-date impact and awards for one tier. Built once per tier
     when the app loads; results for each (week, kind) are cached."""
 
-    def __init__(self, teams, schedule, all_tourneys=(), playoff_rounds=()):
+    def __init__(self, teams, schedule, all_tourneys=(), playoff_rounds=(), scoring=CLASSIC):
         self.teams = teams
+        self.scoring = scoring
         self.team_of = {p.pid: team for team in teams for p in team.players}
         self.player_of = {p.pid: p for team in teams for p in team.players}
         self.weeks = sorted({m.week for m in schedule})
@@ -199,7 +243,7 @@ class TierAwards:
         self.team_games = {week: defaultdict(int) for week in self.weeks}
         self.match_mvps = []        # (week, 'Head-to-head' / 'Tournament' / 'Playoffs', pid)
         for match in schedule:
-            impact = match_impact(match)
+            impact = match_impact(match, scoring)
             for pid, line in impact.items():
                 self.by_week[match.week][pid].add(line)
             for team in (match.team1, match.team2):
@@ -210,19 +254,19 @@ class TierAwards:
                 self.match_mvps.append((match.week, kind, mvp['pid']))
         for rnd in playoff_rounds:
             for match in rnd.matches:
-                mvp = match_mvp(match)
+                mvp = match_mvp(match, scoring=scoring)
                 if mvp:
                     self.match_mvps.append((rnd.week, 'Playoffs', mvp['pid']))
 
         self.tournament_mvps = [(t, row) for t in all_tourneys
-                                for row in event_leaders(t.matches)[:1]]
+                                for row in event_leaders(t.matches, scoring=scoring)[:1]]
         # Playoff awards and the week they're decided (the last round's)
         self.playoff_awards = {}
         if playoff_rounds:
             everything = [m for rnd in playoff_rounds for m in rnd.matches]
             self.playoff_awards = {
-                'Playoff MVP': event_leaders(everything)[0]['pid'],
-                'Final Four MVP': event_leaders(playoff_rounds[-1].matches)[0]['pid'],
+                'Playoff MVP': event_leaders(everything, scoring=scoring)[0]['pid'],
+                'Final Four MVP': event_leaders(playoff_rounds[-1].matches, scoring=scoring)[0]['pid'],
             }
             self.playoffs_decided = playoff_rounds[-1].week
         self._race = {}
@@ -488,9 +532,12 @@ if __name__ == '__main__':
 
     with open('season_all_tiers.pkl', 'rb') as f:
         all_tiers_data = pickle.load(f)
+    win_prob = WinProbScoring([game for data in all_tiers_data.values()
+                               for match in data['schedule'] for game in match.games])
 
     for tier_name, data in all_tiers_data.items():
         awards = TierAwards(data['teams'], data['schedule'])
+        wp_awards = TierAwards(data['teams'], data['schedule'], scoring=win_prob)
         last = awards.weeks[-1]
         print(f"\n{'=' * 60}\n{tier_name}\n{'=' * 60}")
         for kind in KINDS:
@@ -515,3 +562,10 @@ if __name__ == '__main__':
         if data.get('playoff_rounds'):
             mvp = playoff_mvp(data['playoff_rounds'])
             print(f"Playoff MVP: {mvp['pid']} ({mvp['team'].team_name}) score {mvp['score']:.1f}")
+        for kind in KINDS:
+            classic = {r['pid']: r['rank'] for r in awards.season_race(last, kind)}
+            print(f"Win probability race ({kind}) through Week {last}, with classic rank:")
+            for r in wp_awards.season_race(last, kind)[:5]:
+                print(f"  {r['rank']:2}. {r['pid']}  {r['team'].team_name:14} "
+                      f"GP {r['games']:3}  per game {r['per_game']:+.2f}  "
+                      f"above avg {r['above_avg']:+6.1f}  (classic #{classic[r['pid']]})")
