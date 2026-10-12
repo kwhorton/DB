@@ -302,15 +302,20 @@
     </div>
 
     <div class="pills">
-        <a href="{{ url_for('leaders_page', race=race_kind) }}" class="{{ 'active' if not division }}">All {{ current_tier }}</a>
+        <a href="{{ url_for('leaders_page', score=score, race=race_kind) }}" class="{{ 'active' if not division }}">All {{ current_tier }}</a>
         {% for div in divisions %}
-        <a href="{{ url_for('leaders_page', division=div, race=race_kind) }}" class="{{ 'active' if division == div }}">{{ div }}</a>
+        <a href="{{ url_for('leaders_page', score=score, division=div, race=race_kind) }}" class="{{ 'active' if division == div }}">{{ div }}</a>
         {% endfor %}
     </div>
 
     <h2>Season Race</h2>
+    <div class="pills left">
+        <a href="{{ url_for('leaders_page', division=division, race=race_kind) }}" class="{{ 'active' if not score }}">Classic</a>
+        <a href="{{ url_for('leaders_page', division=division, race=race_kind, score='wp') }}" class="{{ 'active' if score }}">Win Probability</a>
+    </div>
     <p class="section-note">
         Points above average: season impact minus what an average {{ current_tier }} player would score in the same number of games.
+        {% if score %}Scored by win probability added: 1 point is the win probability an average hit adds.{% endif %}
     </p>
     <div class="race-grid">
         {% for kind in ['overall', 'offense', 'defense'] %}
@@ -336,7 +341,7 @@
                 </tbody>
             </table>
             <div class="card-footer">
-                <a href="{{ url_for('leaders_page', division=division, race=kind) }}#race-table">Full standings →</a>
+                <a href="{{ url_for('leaders_page', score=score, division=division, race=kind) }}#race-table">Full standings →</a>
             </div>
             {% endif %}
         </div>
@@ -347,7 +352,7 @@
     <h2 id="race-table">{{ race_titles[race_kind] }} Standings</h2>
     <div class="pills left">
         {% for kind in ['overall', 'offense', 'defense'] %}
-        <a href="{{ url_for('leaders_page', division=division, race=kind, show='all' if show_all else none) }}#race-table" class="{{ 'active' if race_kind == kind }}">{{ race_titles[kind] }}</a>
+        <a href="{{ url_for('leaders_page', score=score, division=division, race=kind, show='all' if show_all else none) }}#race-table" class="{{ 'active' if race_kind == kind }}">{{ race_titles[kind] }}</a>
         {% endfor %}
     </div>
     <div class="card">
@@ -385,9 +390,9 @@
         {% if race_total > 25 %}
         <div class="show-toggle">
             {% if show_all %}
-            <a href="{{ url_for('leaders_page', division=division, race=race_kind) }}#race-table">Show top 25</a>
+            <a href="{{ url_for('leaders_page', score=score, division=division, race=race_kind) }}#race-table">Show top 25</a>
             {% else %}
-            <a href="{{ url_for('leaders_page', division=division, race=race_kind, show='all') }}#race-table">Show all {{ race_total }} players</a>
+            <a href="{{ url_for('leaders_page', score=score, division=division, race=race_kind, show='all') }}#race-table">Show all {{ race_total }} players</a>
             {% endif %}
         </div>
         {% endif %}
@@ -434,6 +439,21 @@
 
     <details class="scoring">
         <summary>How impact is scored</summary>
+        {% if score %}
+        <p>
+            Every throw scores for two players: the thrower earns <strong>offense</strong> points and the
+            target earns <strong>defense</strong> points. <strong>Overall</strong> is offense plus defense.
+        </p>
+        <p>
+            Win probability scoring values each throw by how much it changed the throwing team's chance
+            of winning the game, read from a table of every game situation (players alive, balls held and
+            loose balls on each side) in the season's games. The thrower gains what the throw added and
+            the target loses the same. 1 point is what an average hit adds, {{ "%.1f"|format(hit_value * 100) }}
+            percentage points of win probability, so a hit that ends a 1 v 1 game is worth several
+            points while one in a 5 v 1 blowout is worth almost nothing, and a catch is worth more when it
+            brings a teammate back.
+        </p>
+        {% else %}
         <p>
             Every throw scores for two players: the thrower earns <strong>offense</strong> points and the
             target earns <strong>defense</strong> points. <strong>Overall</strong> is offense plus defense.
@@ -452,6 +472,7 @@
                 {% endfor %}
             </table>
         </div>
+        {% endif %}
         <p>
             The season race ranks players by points above average. The tier average is recalculated each
             week from games played so far, so an average player stays near zero however many games they play.

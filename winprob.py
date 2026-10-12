@@ -89,9 +89,17 @@ class WinProb:
         self.coarse_seen = defaultdict(int)
         self.count_wins = defaultdict(int)
         self.count_seen = defaultdict(int)
+        # Hits as (before, after) from the thrower's side, to price a hit
+        hits = defaultdict(int)
         for game in games:
             won = game.winner == 1
-            for state in game_states(game):
+            states = game_states(game)
+            team1 = {p.pid for p in game.players1}
+            for before, after, play in zip(states, states[1:], game.log[1:]):
+                if play['Result'] == 'Hit':
+                    flip = play['Thrower'] not in team1
+                    hits[(before.mirrored(), after.mirrored()) if flip else (before, after)] += 1
+            for state in states:
                 if state.finished:
                     continue
                 for s, w in ((state, won), (state.mirrored(), not won)):
@@ -101,6 +109,11 @@ class WinProb:
                     self.coarse_seen[s.coarse] += 1
                     self.count_wins[s.counts] += w
                     self.count_seen[s.counts] += 1
+
+        n = sum(hits.values())
+        # The win probability an average hit adds for the thrower's team
+        self.hit_value = sum(k * (self(after) - self(before))
+                             for (before, after), k in hits.items()) / n if n else None
 
     def by_counts(self, alive, opp_alive):
         """Win rate by players alive alone."""
@@ -181,7 +194,7 @@ if __name__ == '__main__':
                 hit_by_count[(us.alive, us.opp_alive)].append(value)
 
     avg = lambda xs: sum(xs) / len(xs)
-    hit = avg(by_result['Hit'])
+    hit = wp.hit_value
     print("\nAverage win probability added, for the thrower's team")
     for result in ('Hit', 'Catch', 'Block', 'Miss'):
         v = by_result[result]
