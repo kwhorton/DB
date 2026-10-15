@@ -39,6 +39,8 @@ class Player:
         #Set all stats to 0
         num_throws, num_targeted, num_contact_good, num_contact_bad, num_hit_good, num_hit_bad = 0,0,0,0,0,0
         num_catch_good, num_catch_bad, num_block_good, num_block_bad  = 0,0,0,0
+        #contacts the matchups predicted, from each throw's logged P_Contact
+        exp_contact_good, exp_contact_bad = 0,0
 
         for game in player_games:
             for play in game.log:
@@ -46,6 +48,7 @@ class Player:
                 #if player was thrower, increase # of throws
                 if play['Thrower'] == self.pid:
                     num_throws += 1
+                    exp_contact_good += play['P_Contact']
                     #if player scored a hit, increase # of contacts and hits
                     if play['Result'] == 'Hit':
                         num_contact_good += 1
@@ -62,6 +65,7 @@ class Player:
                 #if player was the target, increase # of times targeted
                 elif play['Target'] == self.pid:
                     num_targeted += 1
+                    exp_contact_bad += play['P_Contact']
                     #if player was hit, increase # of contacts and times hit
                     if play['Result'] == 'Hit':
                         num_contact_bad += 1
@@ -75,13 +79,18 @@ class Player:
                         num_contact_bad += 1
                         num_block_bad += 1
 
+        # Aim and Speed are judged against the matchups: contacts made (or
+        # avoided) beyond what the thrower's Aim vs the target's Speed predicted,
+        # per throw (or per time targeted). Raw contact and dodge rates mostly
+        # reflect the player's own rating, so ranking them would reward a high
+        # rating rather than a good week.
         aim_perf, speed_perf, throw_perf, hands_perf = None,None,None,None
         if num_throws > 0:
-            aim_perf = num_contact_good/num_throws
+            aim_perf = (num_contact_good - exp_contact_good)/num_throws
         if num_contact_good >0:
             throw_perf = (num_hit_good - num_catch_bad)/num_contact_good
         if num_targeted > 0:
-            speed_perf = 1 - num_contact_bad/num_targeted
+            speed_perf = (exp_contact_bad - num_contact_bad)/num_targeted
         if num_contact_bad >0:
             hands_perf = (num_catch_good - num_hit_bad)/num_contact_bad
 

@@ -26,6 +26,7 @@ class Game:
         self.log.append({"Thrower": None,
                     "Target": None,
                     "Result": None,
+                    "P_Contact": None,
                     "Alive": playerids,
                     "Holders": holderids,
                     "Reservoir1": 0,
@@ -64,7 +65,11 @@ class Game:
 
         u1 = random.random()
 
-        if u1 < self.get_prob(thrower.aim, target.speed):
+        #Chance of contact from the matchup, logged so performance can be
+        #judged against it
+        p_contact = self.get_prob(thrower.aim, target.speed)
+
+        if u1 < p_contact:
             #contact
             if target.ball == 1:
                 u2 = random.random()
@@ -126,6 +131,7 @@ class Game:
         self.log.append({"Thrower": thrower.pid,
                     "Target": target.pid,
                     "Result": result,
+                    "P_Contact": p_contact,
                     "Alive": aliveids,
                     "Holders": holderids,
                     "Reservoir1": self.reservoir1,
