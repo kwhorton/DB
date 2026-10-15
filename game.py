@@ -26,6 +26,9 @@ class Game:
         self.log.append({"Thrower": None,
                     "Target": None,
                     "Result": None,
+                    "P_Contact": None,
+                    "P_Hit": None,
+                    "Target_Held": None,
                     "Alive": playerids,
                     "Holders": holderids,
                     "Reservoir1": 0,
@@ -64,11 +67,20 @@ class Game:
 
         u1 = random.random()
 
-        if u1 < self.get_prob(thrower.aim, target.speed):
+        #Chances from the matchup, logged so performance can be judged
+        #against them: contact (Aim vs Speed), then a hit once contact is
+        #made (Throw vs Hands, a quarter of Hands if the target has no ball
+        #to block with)
+        p_contact = self.get_prob(thrower.aim, target.speed)
+        target_held = target.ball == 1
+        p_hit = None
+
+        if u1 < p_contact:
             #contact
             if target.ball == 1:
                 u2 = random.random()
-                if u2 < self.get_prob(thrower.throw, target.hands):
+                p_hit = self.get_prob(thrower.throw, target.hands)
+                if u2 < p_hit:
                     #Hit
                     result = "Hit"
                     #Un-alive target
@@ -87,7 +99,8 @@ class Game:
                     self.put_in_reservoir(u,p=0.5)
             else:
                 u1 = random.random()
-                if u1 < self.get_prob(thrower.throw, 0.25*target.hands):
+                p_hit = self.get_prob(thrower.throw, 0.25*target.hands)
+                if u1 < p_hit:
                     #Hit
                     result = "Hit"
                     #Un-alive target
@@ -126,6 +139,9 @@ class Game:
         self.log.append({"Thrower": thrower.pid,
                     "Target": target.pid,
                     "Result": result,
+                    "P_Contact": p_contact,
+                    "P_Hit": p_hit,
+                    "Target_Held": target_held,
                     "Alive": aliveids,
                     "Holders": holderids,
                     "Reservoir1": self.reservoir1,
