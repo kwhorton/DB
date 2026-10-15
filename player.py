@@ -39,8 +39,10 @@ class Player:
         #Set all stats to 0
         num_throws, num_targeted, num_contact_good, num_contact_bad, num_hit_good, num_hit_bad = 0,0,0,0,0,0
         num_catch_good, num_catch_bad, num_block_good, num_block_bad  = 0,0,0,0
-        #contacts the matchups predicted, from each throw's logged P_Contact
+        #what the matchups predicted, from each throw's logged chances:
+        #contacts, and the throw/hands score (below) on contacts
         exp_contact_good, exp_contact_bad = 0,0
+        exp_throw_score, exp_hands_score = 0,0
 
         for game in player_games:
             for play in game.log:
@@ -49,6 +51,8 @@ class Player:
                 if play['Thrower'] == self.pid:
                     num_throws += 1
                     exp_contact_good += play['P_Contact']
+                    if play['P_Hit'] is not None:
+                        exp_throw_score += expected_throw_score(play)
                     #if player scored a hit, increase # of contacts and hits
                     if play['Result'] == 'Hit':
                         num_contact_good += 1
@@ -66,6 +70,8 @@ class Player:
                 elif play['Target'] == self.pid:
                     num_targeted += 1
                     exp_contact_bad += play['P_Contact']
+                    if play['P_Hit'] is not None:
+                        exp_hands_score -= expected_throw_score(play)
                     #if player was hit, increase # of contacts and times hit
                     if play['Result'] == 'Hit':
                         num_contact_bad += 1
@@ -79,20 +85,24 @@ class Player:
                         num_contact_bad += 1
                         num_block_bad += 1
 
-        # Aim and Speed are judged against the matchups: contacts made (or
-        # avoided) beyond what the thrower's Aim vs the target's Speed predicted,
-        # per throw (or per time targeted). Raw contact and dodge rates mostly
-        # reflect the player's own rating, so ranking them would reward a high
-        # rating rather than a good week.
+        # Every attribute is judged against the matchups, since raw rates
+        # mostly reflect the player's own rating (and, for Throw and Hands,
+        # whether the target held a ball), so ranking them would reward a
+        # high rating rather than a good week.
+        #   Aim/Speed:   contacts made (avoided) beyond what Aim vs Speed
+        #                predicted, per throw (per time targeted)
+        #   Throw/Hands: score on contacts beyond what Throw vs Hands
+        #                predicted, per contact; the thrower scores +1 for a
+        #                hit and -1 for being caught, the target the reverse
         aim_perf, speed_perf, throw_perf, hands_perf = None,None,None,None
         if num_throws > 0:
             aim_perf = (num_contact_good - exp_contact_good)/num_throws
         if num_contact_good >0:
-            throw_perf = (num_hit_good - num_catch_bad)/num_contact_good
+            throw_perf = (num_hit_good - num_catch_bad - exp_throw_score)/num_contact_good
         if num_targeted > 0:
             speed_perf = (exp_contact_bad - num_contact_bad)/num_targeted
         if num_contact_bad >0:
-            hands_perf = (num_catch_good - num_hit_bad)/num_contact_bad
+            hands_perf = (num_catch_good - num_hit_bad - exp_hands_score)/num_contact_bad
 
         stats = {'Week': week,
                  'Aim': self.aimmax,
@@ -114,6 +124,14 @@ class Player:
                  'Hands_Perf': round(hands_perf,3) if hands_perf != None else None}
         self.all_stats.append(stats)
         return stats
+
+
+def expected_throw_score(play):
+    """The thrower's expected score on a contact (+1 hit, -1 caught, 0 blocked):
+    a target holding a ball can only be hit or block, one without can only be
+    hit or catch. The target's expected score is the negative."""
+    p_hit = play['P_Hit']
+    return p_hit if play['Target_Held'] else 2*p_hit - 1
 
 
 def get_improvements(gp):
