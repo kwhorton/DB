@@ -90,6 +90,7 @@ class Impact:
     defense: float = 0.0
     games: int = 0
     hits: int = 0           # opponents this player hit
+    hit_by: int = 0         # times this player was hit
     catches: int = 0        # throws this player caught
 
     @property
@@ -104,6 +105,7 @@ class Impact:
         self.defense += other.defense
         self.games += other.games
         self.hits += other.hits
+        self.hit_by += other.hit_by
         self.catches += other.catches
 
 
@@ -148,6 +150,7 @@ def game_impact(game, scoring=CLASSIC):
         impact[play['Target']].defense += defense
         if play['Result'] == 'Hit':
             impact[play['Thrower']].hits += 1
+            impact[play['Target']].hit_by += 1
         elif play['Result'] == 'Catch':
             impact[play['Target']].catches += 1
     return impact
