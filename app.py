@@ -67,8 +67,19 @@ def award_info(pid, player, team, impact, **extra):
                 team=team.team_name,
                 overall=impact.overall,
                 hits=impact.hits,
+                hit_by=impact.hit_by,
                 catches=impact.catches,
+                stat_line=stat_line(impact),
                 **extra)
+
+def plural(n, one, many):
+    return f"{n} {one if n == 1 else many}"
+
+def stat_line(impact):
+    """'3 hits · hit 2 times · 1 catch'"""
+    return ' · '.join([plural(impact.hits, 'hit', 'hits'),
+                       'hit ' + plural(impact.hit_by, 'time', 'times'),
+                       plural(impact.catches, 'catch', 'catches')])
 
 def match_mvp_info(match):
     mvp = match_mvp(match)

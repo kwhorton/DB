@@ -376,9 +376,9 @@
         {% if trophies.player_of_week %}
         <span class="trophy-badge">📅 Player of the Week{% if trophies.player_of_week|length > 1 %} ×{{ trophies.player_of_week|length }}{% endif %}</span>
         {% endif %}
-        {% if match_mvp_total %}
-        <span class="trophy-badge" title="{% for kind, n in mm.items() if n %}{{ kind }}: {{ n }}{% if not loop.last %} · {% endif %}{% endfor %}">Match MVP ×{{ match_mvp_total }}</span>
-        {% endif %}
+        {% for kind, label in [('Head-to-head', 'Head-to-Head Match MVP'), ('Tournament', 'Tournament Match MVP'), ('Playoffs', 'Playoff Match MVP')] if mm[kind] %}
+        <span class="trophy-badge">{{ label }} ×{{ mm[kind] }}</span>
+        {% endfor %}
     </div>
 
     {% if trophies.tournament_mvps or trophies.player_of_week %}
