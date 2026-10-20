@@ -5,3 +5,4 @@ __pycache__/
 # Local backups and generated scratch output
 *.backup
 names_data.json
+swap_test_results.csv
