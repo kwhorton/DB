@@ -1,0 +1,343 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block head %}
+    <style>
+        .home-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 6px;
+        }
+
+        .home-subtitle {
+            text-align: center;
+            color: #777;
+            margin-bottom: 30px;
+        }
+
+        .home-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+            gap: 30px;
+            align-items: start;
+        }
+
+        @media (max-width: 900px) {
+            .home-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .section-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 12px;
+        }
+
+        .section-title h2 {
+            font-size: 20px;
+            color: #333;
+        }
+
+        .section-title a {
+            font-size: 13px;
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .section-title a:hover {
+            text-decoration: underline;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 10px 14px;
+            font-size: 15px;
+            font-weight: bold;
+        }
+
+        /* Compact standings */
+        .mini-divisions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+        }
+
+        .mini-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .mini-table th {
+            background: #f8f9fa;
+            padding: 6px 10px;
+            text-align: left;
+            color: #555;
+            font-size: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .mini-table td {
+            padding: 6px 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .mini-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .mini-table .num {
+            text-align: right;
+            width: 44px;
+        }
+
+        .mini-table .rank {
+            width: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .mini-table a, .matchup a, .seed-list a {
+            color: #333;
+            text-decoration: none;
+        }
+
+        .mini-table a:hover, .matchup a:hover, .seed-list a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        .seed-badge {
+            display: inline-block;
+            min-width: 22px;
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: bold;
+            text-align: center;
+            color: #667eea;
+            border: 1px solid #667eea;
+            margin-left: 4px;
+        }
+
+        .seed-badge.bye {
+            color: white;
+            background: #667eea;
+        }
+
+        .legend {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #888;
+        }
+
+        .legend a, .empty-note a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .legend a:hover, .empty-note a:hover {
+            text-decoration: underline;
+        }
+
+        /* Upcoming games */
+        .upcoming-card + .upcoming-card {
+            margin-top: 16px;
+        }
+
+        .matchup {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+            gap: 10px;
+            align-items: center;
+            padding: 10px 14px;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+
+        .matchup:last-child {
+            border-bottom: none;
+        }
+
+        .matchup .away {
+            text-align: right;
+        }
+
+        .matchup .vs {
+            color: #999;
+            font-size: 12px;
+        }
+
+        .team-meta {
+            display: block;
+            font-size: 12px;
+            color: #888;
+        }
+
+        .seed-list {
+            list-style: none;
+            padding: 6px 14px 10px;
+            columns: 2;
+            column-gap: 16px;
+            font-size: 14px;
+        }
+
+        .seed-list li {
+            padding: 3px 0;
+            break-inside: avoid;
+        }
+
+        .seed-list .seed {
+            display: inline-block;
+            width: 18px;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .seed-list .pts {
+            color: #888;
+            font-size: 12px;
+        }
+
+        .card-header a {
+            float: right;
+            color: white;
+            font-size: 12px;
+            font-weight: normal;
+            text-decoration: none;
+            opacity: 0.9;
+        }
+
+        .card-header a:hover {
+            text-decoration: underline;
+        }
+
+        .empty-note {
+            padding: 14px;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="home-container">
+    <h1>{{ current_tier }}</h1>
+    <div class="home-subtitle">
+        {% if current_week == 0 %}Preseason{% else %}Through Week {{ "%g"|format(current_week) }}{% endif %}
+    </div>
+
+    <div class="home-grid">
+        <section>
+            <div class="section-title">
+                <h2>Standings</h2>
+                <a href="/standings">Full standings →</a>
+            </div>
+            <div class="mini-divisions">
+                {% for division, rows in standings_data.items() %}
+                <div class="card">
+                    <div class="card-header">{{ division }}</div>
+                    <table class="mini-table">
+                        <thead>
+                            <tr><th></th><th>Team</th><th class="num">Pts</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for row in rows %}
+                            <tr>
+                                <td class="rank">{{ loop.index }}</td>
+                                <td>
+                                    <a href="/team/{{ row.team_name }}">{{ row.team_name }}</a>
+                                    {% set seed = seed_of.get(row.team_name) %}
+                                    {% if seed %}<span class="seed-badge{{ ' bye' if seed <= 4 }}" title="Playoff seed {{ seed }}">{{ seed }}</span>{% endif %}
+                                </td>
+                                <td class="num">{{ row.score }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endfor %}
+            </div>
+            {% if seed_of %}
+            <div class="legend">Badges show current playoff seeds; filled badges get a first-round bye. <a href="/playoffs">Playoff picture →</a></div>
+            {% endif %}
+        </section>
+
+        <section>
+            {% if upcoming %}
+            <div class="section-title">
+                <h2>Up Next · {% if upcoming.kind == 'playoffs' %}{{ upcoming.name }}{% else %}Week {{ "%g"|format(upcoming.week) }}{% endif %}</h2>
+                {% if upcoming.kind == 'playoffs' %}
+                <a href="/playoffs">Playoffs →</a>
+                {% else %}
+                <a href="/schedule/{{ "%g"|format(upcoming.week) }}">Full schedule →</a>
+                {% endif %}
+            </div>
+
+            {% if upcoming.kind == 'h2h' %}
+            <div class="card upcoming-card">
+                <div class="card-header">Head-to-Head</div>
+                {% for t1, t2 in upcoming.matches %}
+                <div class="matchup">
+                    <div class="away">
+                        <a href="/team/{{ t1.team }}">{{ t1.team }}</a>
+                        <span class="team-meta">{{ t1.place|ordinal }} {{ t1.division }} · {{ t1.score }} pts</span>
+                    </div>
+                    <div class="vs">at</div>
+                    <div>
+                        <a href="/team/{{ t2.team }}">{{ t2.team }}</a>
+                        <span class="team-meta">{{ t2.place|ordinal }} {{ t2.division }} · {{ t2.score }} pts</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            {% elif upcoming.kind == 'tournament' %}
+            {% for group in upcoming.groups %}
+            <div class="card upcoming-card">
+                <div class="card-header">
+                    {{ upcoming.type }} Tournament{% if group.subtype %} · {{ group.subtype }}{% endif %}
+                </div>
+                <ol class="seed-list">
+                    {% for t in group.teams %}
+                    <li><span class="seed">{{ loop.index }}</span><a href="/team/{{ t.team }}">{{ t.team }}</a> <span class="pts">{{ t.score }}</span></li>
+                    {% endfor %}
+                </ol>
+            </div>
+            {% endfor %}
+            <div class="legend">Projected seeds, from the standings so far.</div>
+
+            {% else %}
+            <div class="card upcoming-card">
+                <div class="card-header">{{ upcoming.name }}</div>
+                <div class="empty-note">The top 12 teams play for the {{ current_tier }} title. <a href="/playoffs">See the bracket →</a></div>
+            </div>
+            {% endif %}
+
+            {% else %}
+            <div class="section-title"><h2>Up Next</h2></div>
+            <div class="card upcoming-card">
+                <div class="card-header">Season complete</div>
+                <div class="empty-note">All games have been played. <a href="/playoffs">See how the playoffs finished →</a></div>
+            </div>
+            {% endif %}
+        </section>
+    </div>
+</div>
+{% endblock %}
