@@ -160,7 +160,7 @@ class Season:
     def rng(self, *key):
         """A random source fixed by tier, week and story, so an article reads
         the same every time it's shown."""
-        seed = '|'.join(str(k) for k in (self.tier, self.current_week) + key)
+        seed = '|'.join(str(k) for k in (self.tier, f"{self.current_week:g}") + key)
         return random.Random(zlib.crc32(seed.encode()))
 
 
