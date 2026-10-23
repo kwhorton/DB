@@ -140,7 +140,22 @@ def index():
     standings_data = get_standings_by_division(teams, schedule, all_tourneys, current_week)
     playoff_standings = get_playoff_standings(teams, schedule, all_tourneys, current_week)
 
-    return render_template("index.html", standings_data=standings_data, playoff_standings=playoff_standings)
+    return render_template("index.html", standings_data=standings_data, playoff_standings=playoff_standings,
+                           player_of_week=player_of_week_info(current_week))
+
+def player_of_week_info(current_week, runners_up=4):
+    """The latest played week's Player of the Week (top overall impact above
+    that week's tier average) and the next few, or None before Week 1."""
+    awards = tier_awards[session.get('current_tier', 'Tier 1')]
+    weeks = awards.weeks_through(current_week)
+    if not weeks:
+        return None
+    week = weeks[-1]
+    lines = awards.by_week[week]
+    rows = [award_info(r['pid'], r['player'], r['team'], lines[r['pid']],
+                       above_avg=r['above_avg'], games=r['games'])
+            for r in awards.player_of_week(week)[:runners_up + 1]]
+    return {'week': week, 'winner': rows[0], 'runners_up': rows[1:]}
 
 @app.route('/team/<team_name>')
 def team_page(team_name):
@@ -464,9 +479,10 @@ def render_match_animation(match, match_index, game_index, tournament_id=None, p
     players = match.team1.players + match.team2.players
     player_names = {p.pid: p.name for p in players if getattr(p, 'name', None)}
 
-    # Cumulative play logs across all games up to and including this one
+    # Play logs of the match's earlier games; the page adds this game's
+    # throws as they are shown
     all_games_logs = []
-    for g in match.games[:game_index + 1]:
+    for g in match.games[:game_index]:
         all_games_logs.extend(getattr(g, 'log', []))
 
     # Which set this game is in, and its position within that set
@@ -509,13 +525,18 @@ def render_match_animation(match, match_index, game_index, tournament_id=None, p
         'team2_roster': [p.pid for p in match.team2.players]
     }
 
+    # The page tracks impact as the games play out and reveals the match MVP
+    # only once the last game has finished
     return render_template('dodgeball_animation.html',
                          game_log=game_log,
                          all_games_logs=all_games_logs,
                          match_info=match_info,
                          match_index=match_index,
                          game_index=game_index,
-                         player_names=player_names)
+                         player_names=player_names,
+                         match_mvp=match_mvp_info(match),
+                         offense_weights=OFFENSE_WEIGHTS,
+                         defense_weights=DEFENSE_WEIGHTS)
 
 
 @app.route('/animate/match/<int:match_index>')

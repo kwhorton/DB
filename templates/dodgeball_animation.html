@@ -298,6 +298,38 @@
             width: 150px;
         }
         
+        .player-stat-row.highlighted {
+            background: #fff3cd;
+            border-radius: 4px;
+            box-shadow: inset 3px 0 0 #f5b041;
+        }
+
+        .mvp-banner {
+            margin-top: 20px;
+            padding: 14px 18px;
+            border-radius: 6px;
+            background: linear-gradient(135deg, #ffd89b 0%, #f5b041 100%);
+            color: #5a3d00;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+
+        .mvp-banner .mvp-detail {
+            display: block;
+            font-size: 13px;
+            font-weight: normal;
+            margin-top: 4px;
+        }
+
+        .leader-note {
+            font-size: 12px;
+            color: #888;
+            text-align: center;
+            margin-top: 8px;
+        }
+
         .info-panel {
             margin-top: 20px;
             padding: 15px;
@@ -438,6 +470,9 @@
     
     
     
+    <div class="mvp-banner" id="mvpBanner" style="display: none;"></div>
+    <div class="leader-note" id="leaderNote">⭐ marks the highest impact so far in this match</div>
+
     <div class="info-panel">
         <div class="play-info" id="playInfo">Ready to start</div>
         <div class="team-info">
@@ -462,6 +497,13 @@
         // Player names lookup from Flask
         const playerNames = {{ player_names | tojson }};
         
+        // Impact weights (points per throw result for thrower / target) and the
+        // match MVP, revealed only when the last game finishes
+        const offenseWeights = {{ offense_weights | tojson }};
+        const defenseWeights = {{ defense_weights | tojson }};
+        const matchMvp = {{ match_mvp | tojson }};
+        let highlightedPlayer = null;
+
         // Roster players from match_info
         const team1Roster = {{ match_info.team1_roster | tojson }};
         const team2Roster = {{ match_info.team2_roster | tojson }};
@@ -515,22 +557,8 @@
         
         function initializeStats() {
             // Initialize stats for ALL roster players (not just those playing in this game)
-            team1Roster.forEach(playerId => {
-                playerStats[playerId] = {
-                    hits: 0,
-                    misses: 0,
-                    blocks: 0,
-                    catches: 0
-                };
-            });
-            
-            team2Roster.forEach(playerId => {
-                playerStats[playerId] = {
-                    hits: 0,
-                    misses: 0,
-                    blocks: 0,
-                    catches: 0
-                };
+            [...team1Roster, ...team2Roster].forEach(playerId => {
+                playerStats[playerId] = { hits: 0, misses: 0, blocks: 0, catches: 0, impact: 0 };
             });
             
             // Set team headers
@@ -543,28 +571,16 @@
         function updateStatsFromLog() {
             // Reset all stats
             Object.keys(playerStats).forEach(playerId => {
-                playerStats[playerId] = { hits: 0, misses: 0, blocks: 0, catches: 0 };
+                playerStats[playerId] = { hits: 0, misses: 0, blocks: 0, catches: 0, impact: 0 };
             });
             
-            // Count stats from ALL previous games AND current game up to current play
-            // Use allGamesLogs which contains all games up to and including current game
+            // Count stats from all previous games, then this game up to the current play
+            // (allGamesLogs holds the earlier games only)
             for (let i = 1; i < allGamesLogs.length; i++) {
                 const play = allGamesLogs[i];
                 if (!play.Thrower || !play.Target || !play.Result) continue;
                 
-                const result = play.Result;
-                const thrower = play.Thrower;
-                const target = play.Target;
-                
-                if (result === 'Hit') {
-                    if (playerStats[thrower]) playerStats[thrower].hits++;
-                } else if (result === 'Miss') {
-                    if (playerStats[thrower]) playerStats[thrower].misses++;
-                } else if (result === 'Block') {
-                    if (playerStats[target]) playerStats[target].blocks++;
-                } else if (result === 'Catch') {
-                    if (playerStats[target]) playerStats[target].catches++;
-                }
+                tallyPlay(play);
             }
             
             // Then add stats from current game up to current play
@@ -572,22 +588,61 @@
                 const play = gameLog[i];
                 if (!play.Thrower || !play.Target || !play.Result) continue;
                 
-                const result = play.Result;
-                const thrower = play.Thrower;
-                const target = play.Target;
-                
-                if (result === 'Hit') {
-                    if (playerStats[thrower]) playerStats[thrower].hits++;
-                } else if (result === 'Miss') {
-                    if (playerStats[thrower]) playerStats[thrower].misses++;
-                } else if (result === 'Block') {
-                    if (playerStats[target]) playerStats[target].blocks++;
-                } else if (result === 'Catch') {
-                    if (playerStats[target]) playerStats[target].catches++;
-                }
+                tallyPlay(play);
             }
         }
         
+        function tallyPlay(play) {
+            const result = play.Result;
+            const thrower = play.Thrower;
+            const target = play.Target;
+
+            if (result === 'Hit') {
+                if (playerStats[thrower]) playerStats[thrower].hits++;
+            } else if (result === 'Miss') {
+                if (playerStats[thrower]) playerStats[thrower].misses++;
+            } else if (result === 'Block') {
+                if (playerStats[target]) playerStats[target].blocks++;
+            } else if (result === 'Catch') {
+                if (playerStats[target]) playerStats[target].catches++;
+            }
+            if (playerStats[thrower]) playerStats[thrower].impact += offenseWeights[result] || 0;
+            if (playerStats[target]) playerStats[target].impact += defenseWeights[result] || 0;
+        }
+
+        function formatImpact(value) {
+            return (value >= 0 ? '+' : '') + value.toFixed(1);
+        }
+
+        function matchIsOver() {
+            return isLastGame && currentPlay >= gameLog.length - 1 && !throwAnimation;
+        }
+
+        // Highlight the match MVP once the match is over; until then, whoever
+        // has the highest impact over the throws shown so far
+        function updateHighlight() {
+            const banner = document.getElementById('mvpBanner');
+            const note = document.getElementById('leaderNote');
+            if (matchIsOver() && matchMvp) {
+                highlightedPlayer = matchMvp.pid;
+                banner.innerHTML = `⭐ Match MVP: ${matchMvp.name} (${matchMvp.team})` +
+                    `<span class="mvp-detail">${formatImpact(matchMvp.overall)} impact · ${matchMvp.stat_line}</span>`;
+                banner.style.display = '';
+                note.style.display = 'none';
+                return;
+            }
+            banner.style.display = 'none';
+            note.style.display = '';
+            highlightedPlayer = null;
+            let best = 0;
+            Object.entries(playerStats).forEach(([playerId, stats]) => {
+                if (stats.impact > best) {
+                    best = stats.impact;
+                    highlightedPlayer = playerId;
+                }
+            });
+        }
+
         function updateStatsDisplay() {
             // Update Team 1 stats - show ALL roster players
             let team1HTML = '';
@@ -598,8 +653,8 @@
                 const finalName = shortName.length > 10 ? shortName.substring(0, 8) : shortName;
                 
                 team1HTML += `
-                    <div class="player-stat-row">
-                        <div class="player-stat-name">${finalName}</div>
+                    <div class="player-stat-row${playerId === highlightedPlayer ? ' highlighted' : ''}">
+                        <div class="player-stat-name">${playerId === highlightedPlayer ? '⭐ ' : ''}${finalName}</div>
                         <div class="player-stat-values">
                             <div class="stat-item">
                                 <span class="stat-label">Hits:</span>
@@ -616,6 +671,10 @@
                             <div class="stat-item">
                                 <span class="stat-label">Catches:</span>
                                 <span class="stat-value">${stats.catches}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Impact:</span>
+                                <span class="stat-value">${formatImpact(stats.impact)}</span>
                             </div>
                         </div>
                     </div>
@@ -632,8 +691,8 @@
                 const finalName = shortName.length > 10 ? shortName.substring(0, 8) : shortName;
                 
                 team2HTML += `
-                    <div class="player-stat-row">
-                        <div class="player-stat-name">${finalName}</div>
+                    <div class="player-stat-row${playerId === highlightedPlayer ? ' highlighted' : ''}">
+                        <div class="player-stat-name">${playerId === highlightedPlayer ? '⭐ ' : ''}${finalName}</div>
                         <div class="player-stat-values">
                             <div class="stat-item">
                                 <span class="stat-label">Hits:</span>
@@ -650,6 +709,10 @@
                             <div class="stat-item">
                                 <span class="stat-label">Catches:</span>
                                 <span class="stat-value">${stats.catches}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Impact:</span>
+                                <span class="stat-value">${formatImpact(stats.impact)}</span>
                             </div>
                         </div>
                     </div>
@@ -715,6 +778,15 @@
                 ctx.stroke();
             }
             
+            // Gold ring around the highlighted player
+            if (playerId === highlightedPlayer) {
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, 26, 0, Math.PI * 2);
+                ctx.strokeStyle = '#f5b041';
+                ctx.lineWidth = 4;
+                ctx.stroke();
+            }
+
             // Draw ball if player has one
             if (hasBall && isAlive) {
                 ctx.beginPath();
@@ -831,6 +903,9 @@
                 ? (currentPlay > 0 ? gameLog[currentPlay - 1] : gameLog[0])
                 : gameLog[currentPlay];
             
+            updateStatsFromLog();
+            updateHighlight();
+
             drawCourt();
             drawReservoirs(displayPlay.Reservoir1, displayPlay.Reservoir2);
             
@@ -854,7 +929,6 @@
             // Update info panel with current play info (not affected by animation timing)
             updateInfoPanel();
             // Update player stats
-            updateStatsFromLog();
             updateStatsDisplay();
         }
         
@@ -869,7 +943,9 @@
                     currentPlay++;
                     
                     if (currentPlay >= gameLog.length) {
+                        currentPlay = gameLog.length - 1;
                         pause();
+                        render();
                         return;
                     }
                     
