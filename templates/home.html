@@ -228,6 +228,80 @@
             text-decoration: underline;
         }
 
+        /* League news */
+        .news {
+            margin-bottom: 36px;
+        }
+
+        .news-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .article {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 16px 18px;
+            border-top: 4px solid #667eea;
+        }
+
+        .article.lead {
+            padding: 22px 26px;
+            border-top: none;
+            border-left: 6px solid #764ba2;
+        }
+
+        .article-tag {
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #764ba2;
+        }
+
+        .article h3 {
+            font-size: 17px;
+            color: #333;
+            margin: 4px 0 8px;
+        }
+
+        .article.lead h3 {
+            font-size: 26px;
+            margin-bottom: 12px;
+        }
+
+        .article p {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #444;
+        }
+
+        .article.lead p {
+            font-size: 16px;
+        }
+
+        .article p + p {
+            margin-top: 8px;
+        }
+
+        .article.roundup {
+            border-top-color: #bbb;
+        }
+
+        .roundup-list {
+            list-style: none;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #444;
+        }
+
+        .roundup-list li + li {
+            margin-top: 6px;
+        }
+
         .empty-note {
             padding: 14px;
             color: #666;
@@ -242,6 +316,36 @@
     <div class="home-subtitle">
         {% if current_week == 0 %}Preseason{% else %}Through Week {{ "%g"|format(current_week) }}{% endif %}
     </div>
+
+    {% set tags = {'h2h_preview': 'Preview', 'tourney_preview': 'Preview', 'playoff_preview': 'Preview',
+                   'preseason': 'Season preview', 'field_set': 'Playoffs', 'playoff_round': 'Playoffs',
+                   'champion': 'Champions', 'standings': 'Standings', 'potw': 'Player of the Week',
+                   'race': 'MVP race', 'star': 'Star turn', 'upset': 'Upset', 'roundup': 'Roundup'} %}
+    {% if news %}
+    <section class="news">
+        {% set lead = news[0] %}
+        <article class="article lead">
+            <div class="article-tag">{{ tags.get(lead.kind, 'Recap') }}</div>
+            <h3>{{ lead.headline }}</h3>
+            {% for p in lead.paragraphs %}<p>{{ p }}</p>{% endfor %}
+        </article>
+        {% if news|length > 1 %}
+        <div class="news-grid">
+            {% for a in news[1:] %}
+            <article class="article{{ ' roundup' if a.kind == 'roundup' }}">
+                <div class="article-tag">{{ tags.get(a.kind, 'Recap') }}</div>
+                <h3>{{ a.headline }}</h3>
+                {% if a.kind == 'roundup' %}
+                <ul class="roundup-list">{% for p in a.paragraphs %}<li>{{ p }}</li>{% endfor %}</ul>
+                {% else %}
+                {% for p in a.paragraphs %}<p>{{ p }}</p>{% endfor %}
+                {% endif %}
+            </article>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </section>
+    {% endif %}
 
     <div class="home-grid">
         <section>
