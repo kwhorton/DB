@@ -6,6 +6,7 @@ from itertools import groupby
 from league import H2H_WEEKS, TOURNEY_TYPES, FIRST_TOURNEY_WEEK, PLAYOFF_WEEKS, PLAYOFF_ROUND_NAMES
 from tourney import subtype_of, backfill_game_records
 from playoffs import playoff_seeds
+from news import league_news
 from awards import (TierAwards, WinProbScoring, KINDS, OFFENSE_WEIGHTS, DEFENSE_WEIGHTS,
                     QUALIFY_SHARE, HOT_WEEKS, MATCH_WIN_BONUS, match_mvp, event_leaders)
 
@@ -36,6 +37,15 @@ def wp_tier_awards(tier):
                               data.get('playoff_rounds', []), scoring=scoring)
              for name, data in all_tiers_data.items()})
     return _wp_tier_awards[tier]
+
+# Home page articles, written the first time each (tier, week) is shown
+_news = {}
+
+
+def news_for(tier, week):
+    if (tier, week) not in _news:
+        _news[(tier, week)] = league_news(tier, all_tiers_data[tier], tier_awards[tier], week)
+    return _news[(tier, week)]
 
 # Available tiers
 AVAILABLE_TIERS = ['Tier 1', 'Tier 2', 'Tier 3', 'Tier 4']
@@ -129,6 +139,56 @@ def get_current_tier_data():
     return all_tiers_data[tier]
 
 @app.route("/")
+def home():
+    current_week = session.get('current_week', 1)
+    tier_data = get_current_tier_data()
+
+    teams = tier_data['teams']
+    schedule = tier_data['schedule']
+    all_tourneys = tier_data['all_tourneys']
+
+    # Playoff seeds beside each team, once any results are in
+    n = results_through(current_week)
+    seed_of = {team.team_name: seed for seed, team in enumerate(playoff_seeds(teams, n), start=1)} if n else {}
+
+    return render_template("home.html",
+                           news=news_for(session.get('current_tier', 'Tier 1'), current_week),
+                           standings_data=get_standings_by_division(teams, schedule, all_tourneys, current_week),
+                           seed_of=seed_of,
+                           upcoming=upcoming_info(teams, schedule, all_tourneys, current_week))
+
+def upcoming_info(teams, schedule, all_tourneys, current_week):
+    """The next week's head-to-head matchups or projected tournament seeds,
+    the next playoff round, or None once the season is over."""
+    next_week = next((w for w in WEEKS + PLAYOFF_WEEKS if w > current_week), None)
+    if next_week is None:
+        return None
+    if next_week in PLAYOFF_WEEKS:
+        return {'week': next_week, 'kind': 'playoffs',
+                'name': PLAYOFF_ROUND_NAMES[PLAYOFF_WEEKS.index(next_week)]}
+
+    n, rating_week = snapshot(next_week, current_week)
+
+    def side(team):
+        return {'team': team.team_name,
+                'score': sum(team.score[:n]),
+                'division': team.division,
+                'place': division_place(team, teams, n, rating_week)}
+
+    if next_week in H2H_WEEKS:
+        return {'week': next_week, 'kind': 'h2h',
+                'matches': [(side(m.team1), side(m.team2))
+                            for m in schedule if m.week == next_week]}
+
+    # Seeds projected from what's known so far, as the schedule page does
+    groups = [{'id': t.id,
+               'subtype': subtype_of(t, all_tourneys),
+               'teams': [side(team) for team, _ in ranked(t.team_list, n, rating_week)]}
+              for t in all_tourneys if t.week == next_week]
+    return {'week': next_week, 'kind': 'tournament',
+            'type': TOURNEY_TYPES[int(next_week) - FIRST_TOURNEY_WEEK], 'groups': groups}
+
+@app.route("/standings")
 def index():
     current_week = session.get('current_week', 1)
     tier_data = get_current_tier_data()
