@@ -342,6 +342,7 @@
         <div class="potw-name"><a href="/player/{{ potw.pid }}">{{ potw.name }}</a></div>
         <div class="potw-team"><a href="/team/{{ potw.team }}">{{ potw.team }}</a></div>
         <div class="potw-stats">
+            {{ "%+.1f"|format(potw.overall) }} impact ({{ "%+.1f"|format(potw.above_avg) }} above avg) in {{ potw.games }} game{{ 's' if potw.games != 1 }} · {{ potw.stat_line }}
             {{ "%+.1f"|format(potw.above_avg) }} above avg in {{ potw.games }} game{{ 's' if potw.games != 1 }} · {{ potw.stat_line }}
         </div>
     </div>
@@ -351,6 +352,7 @@
         {% for r in player_of_week.runners_up %}
         <div class="potw-other">
             <span>{{ loop.index + 1 }}. <a href="/player/{{ r.pid }}">{{ r.name }}</a> <span class="potw-muted">{{ r.team }}</span></span>
+            <span class="potw-value" title="{{ "%+.1f"|format(r.overall) }} impact">{{ "%+.1f"|format(r.above_avg) }} above avg</span>
             <span class="potw-value">{{ "%+.1f"|format(r.above_avg) }}</span>
         </div>
         {% endfor %}
@@ -385,6 +387,10 @@
             </thead>
             <tbody>
                 {% for team in teams %}
+                <tr onclick="window.location.href='/team/{{ team.team_name }}'">
+                    <td class="rank">{{ loop.index }}</td>
+                    <td class="team-name">
+                        <a href="/team/{{ team.team_name }}">{{ team.team_name }}</a>
                 <tr class="{{ pr.row_class(promo, team.team_name) }}" onclick="window.location.href='/team/{{ team.team_name }}'">
                     <td class="rank">{{ loop.index }}</td>
                     <td class="team-name">
@@ -424,6 +430,8 @@
                 </thead>
                 <tbody>
                     {% for team_data in playoff_standings %}
+                    <tr onclick="window.location.href='/team/{{ team_data.team.team_name }}'" 
+                        {% if loop.index == 12 %}class="playoff-cutoff"{% endif %}>
                     <tr onclick="window.location.href='/team/{{ team_data.team.team_name }}'"
                         class="{{ pr.row_class(promo, team_data.team.team_name) }}{% if loop.index == 12 %} playoff-cutoff{% endif %}">
                         <td class="rank">{{ loop.index }}</td>
