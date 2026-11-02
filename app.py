@@ -8,7 +8,7 @@ from tourney import subtype_of, backfill_game_records
 from playoffs import playoff_seeds
 from news import league_news
 from promotion import promotion_picture, LAST_REGULAR_WEEK
-from awards import (TierAwards, WinProbScoring, KINDS, OFFENSE_WEIGHTS, DEFENSE_WEIGHTS,
+from awards import (TierAwards, KINDS, OFFENSE_WEIGHTS, DEFENSE_WEIGHTS,
                     QUALIFY_SHARE, HOT_WEEKS, MATCH_WIN_BONUS, match_mvp, event_leaders)
 
 # Load all tiers data
@@ -23,21 +23,6 @@ for tier_data in all_tiers_data.values():
 tier_awards = {tier: TierAwards(data['teams'], data['schedule'], data['all_tourneys'],
                                data.get('playoff_rounds', []))
                for tier, data in all_tiers_data.items()}
-
-# The same, scored by win probability added. Built the first time the
-# leaders page asks for it, since the table reads every game in the season.
-_wp_tier_awards = {}
-
-
-def wp_tier_awards(tier):
-    if not _wp_tier_awards:
-        scoring = WinProbScoring([game for data in all_tiers_data.values()
-                                  for match in data['schedule'] for game in match.games])
-        _wp_tier_awards.update(
-            {name: TierAwards(data['teams'], data['schedule'], data['all_tourneys'],
-                              data.get('playoff_rounds', []), scoring=scoring)
-             for name, data in all_tiers_data.items()})
-    return _wp_tier_awards[tier]
 
 # Home page articles, written the first time each (tier, week) is shown
 _news = {}
@@ -755,10 +740,7 @@ def playoffs_page():
 def leaders_page():
     current_week = session.get('current_week', 1)
     tier_data = get_current_tier_data()
-    # Classic scoring unless ?score=wp asks for win probability added
-    score = 'wp' if request.args.get('score') == 'wp' else None
-    tier = session.get('current_tier', 'Tier 1')
-    awards = wp_tier_awards(tier) if score else tier_awards[tier]
+    awards = tier_awards[session.get('current_tier', 'Tier 1')]
 
     divisions = sorted({team.division for team in tier_data['teams']})
     division = request.args.get('division')
@@ -798,8 +780,6 @@ def leaders_page():
                            race_total=len(race_table),
                            show_all=show_all,
                            stat_groups=groups,
-                           score=score,
-                           hit_value=awards.scoring.wp.hit_value if score else None,
                            offense_weights=OFFENSE_WEIGHTS,
                            defense_weights=DEFENSE_WEIGHTS,
                            qualify_pct=round(QUALIFY_SHARE * 100),
