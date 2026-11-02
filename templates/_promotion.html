@@ -66,6 +66,8 @@
         gap: 10px;
         padding: 2px 0;
     }
+    .promo-group ul.two-col { columns: 2; column-gap: 16px; }
+    .promo-group ul.two-col li { break-inside: avoid; }
     .promo-group a { color: #333; text-decoration: none; }
     .promo-group a:hover { color: #764ba2; text-decoration: underline; }
     .promo-group .pts { color: #888; font-size: 12px; white-space: nowrap; }
@@ -128,7 +130,7 @@
             </ul>
             {% elif promo.contenders %}
             <div class="muted">2 spots for the best playoff finishers outside the top 2. Still alive:</div>
-            <ul>
+            <ul class="two-col">
                 {% for t in promo.contenders %}<li>{{ team_link(t) }}</li>{% endfor %}
             </ul>
             {% else %}
