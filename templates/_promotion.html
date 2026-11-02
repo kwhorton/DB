@@ -1,0 +1,158 @@
+{# Promotion/relegation badges, row classes and summary card.
+   Import with: {% import "_promotion.html" as pr %} #}
+
+{% macro styles() %}
+<style>
+    .zone-badge {
+        display: inline-block;
+        padding: 1px 5px;
+        border-radius: 3px;
+        font-size: 10px;
+        font-weight: bold;
+        margin-left: 4px;
+        white-space: nowrap;
+        color: white;
+        vertical-align: middle;
+    }
+    .zone-badge.auto { background: #2e9e5b; }
+    .zone-badge.playoff { background: #1f8a9e; }
+    .zone-badge.relegated { background: #d9534f; }
+    .zone-badge.projected { opacity: 0.75; }
+
+    tr.zone-auto td, tr.zone-playoff td { background: #eef8f1; }
+    tr.zone-relegated td { background: #fdf0ef; }
+    tr.zone-auto td:first-child, tr.zone-playoff td:first-child { box-shadow: inset 4px 0 #2e9e5b; }
+    tr.zone-relegated td:first-child { box-shadow: inset 4px 0 #d9534f; }
+
+    .promo-card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    .promo-card .promo-header {
+        background: linear-gradient(135deg, #2e9e5b 0%, #d9534f 100%);
+        color: white;
+        padding: 10px 14px;
+        font-size: 15px;
+        font-weight: bold;
+    }
+    .promo-note {
+        padding: 8px 14px 0;
+        font-size: 12px;
+        color: #888;
+    }
+    .promo-body {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 4px 20px;
+        padding: 6px 14px 12px;
+    }
+    .promo-group h4 {
+        font-size: 13px;
+        margin: 8px 0 4px;
+    }
+    .promo-group.up h4 { color: #2e9e5b; }
+    .promo-group.down h4 { color: #d9534f; }
+    .promo-group ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        font-size: 14px;
+    }
+    .promo-group li {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 2px 0;
+    }
+    .promo-group ul.two-col { columns: 2; column-gap: 16px; }
+    .promo-group ul.two-col li { break-inside: avoid; }
+    .promo-group a { color: #333; text-decoration: none; }
+    .promo-group a:hover { color: #764ba2; text-decoration: underline; }
+    .promo-group .pts { color: #888; font-size: 12px; white-space: nowrap; }
+    .promo-group .muted { color: #888; font-size: 13px; }
+    .promo-group .bubble { color: #888; font-size: 12px; margin-top: 4px; }
+    .promo-group .bubble a { color: #666; }
+</style>
+{% endmacro %}
+
+{% macro row_class(promo, team_name) -%}
+{%- set s = promo.status.get(team_name) if promo else none -%}
+{%- if s %}zone-{{ s }}{% endif -%}
+{%- endmacro %}
+
+{% macro badge(promo, team_name) -%}
+{%- set s = promo.status.get(team_name) if promo else none -%}
+{%- if s -%}
+{%- set proj = not promo.final -%}
+{%- if s == 'auto' -%}
+<span class="zone-badge auto{{ ' projected' if proj }}" title="{{ 'In automatic promotion position' if proj else 'Promoted' }} to {{ promo.up_tier }} (top 2)">▲ UP</span>
+{%- elif s == 'playoff' -%}
+<span class="zone-badge playoff" title="Promoted to {{ promo.up_tier }} through the playoffs">▲ UP·PO</span>
+{%- else -%}
+<span class="zone-badge relegated{{ ' projected' if proj }}" title="{{ 'In the relegation zone' if proj else 'Relegated' }} to {{ promo.down_tier }} (bottom 4)">▼ DOWN</span>
+{%- endif -%}
+{%- endif -%}
+{%- endmacro %}
+
+{% macro team_link(t) %}<a href="/team/{{ t.team_name }}">{{ t.team_name }}</a>{% endmacro %}
+
+{% macro card(promo) %}
+<div class="promo-card">
+    <div class="promo-header">Promotion &amp; Relegation</div>
+    <div class="promo-note">
+        {% if not promo.started %}Zones appear once results are in.
+        {% elif not promo.final %}Projected from the standings so far; set after Week {{ promo.last_week }}.
+        {% elif promo.can_promote and not promo.playoffs_decided %}Regular-season places are final; playoff promotions still to be decided.
+        {% else %}Final.{% endif %}
+    </div>
+    <div class="promo-body">
+        {% if promo.can_promote %}
+        <div class="promo-group up">
+            <h4>▲ Automatic promotion to {{ promo.up_tier }}</h4>
+            {% if promo.auto %}
+            <ul>
+                {% for r in promo.auto %}<li>{{ team_link(r.team) }} <span class="pts">{{ r.score }} pts</span></li>{% endfor %}
+            </ul>
+            {% if promo.chasers and not promo.final %}
+            <div class="bubble">Chasing:
+                {% for c in promo.chasers %}{{ team_link(c.team) }} ({{ c.gap }} back){{ ', ' if not loop.last }}{% endfor %}
+            </div>
+            {% endif %}
+            {% else %}<div class="muted">Top 2 by record.</div>{% endif %}
+        </div>
+        <div class="promo-group up">
+            <h4>▲ Playoff promotion to {{ promo.up_tier }}</h4>
+            {% if promo.playoff %}
+            <ul>
+                {% for t in promo.playoff %}<li>{{ team_link(t) }}</li>{% endfor %}
+            </ul>
+            {% elif promo.contenders %}
+            <div class="muted">2 spots for the best playoff finishers outside the top 2. Still alive:</div>
+            <ul class="two-col">
+                {% for t in promo.contenders %}<li>{{ team_link(t) }}</li>{% endfor %}
+            </ul>
+            {% else %}
+            <div class="muted">The 2 best playoff finishers outside the top 2 also go up.</div>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% if promo.can_relegate %}
+        <div class="promo-group down">
+            <h4>▼ Relegation to {{ promo.down_tier }}</h4>
+            {% if promo.relegated %}
+            <ul>
+                {% for r in promo.relegated %}<li>{{ team_link(r.team) }} <span class="pts">{{ r.score }} pts</span></li>{% endfor %}
+            </ul>
+            {% if promo.survivors and not promo.final %}
+            <div class="bubble">Just above:
+                {% for c in promo.survivors %}{{ team_link(c.team) }} ({{ c.gap }} clear){{ ', ' if not loop.last }}{% endfor %}
+            </div>
+            {% endif %}
+            {% else %}<div class="muted">Bottom 4 by record.</div>{% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endmacro %}

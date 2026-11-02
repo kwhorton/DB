@@ -7,6 +7,7 @@ from league import H2H_WEEKS, TOURNEY_TYPES, FIRST_TOURNEY_WEEK, PLAYOFF_WEEKS, 
 from tourney import subtype_of, backfill_game_records
 from playoffs import playoff_seeds
 from news import league_news
+from promotion import promotion_picture, LAST_REGULAR_WEEK
 from awards import (TierAwards, WinProbScoring, KINDS, OFFENSE_WEIGHTS, DEFENSE_WEIGHTS,
                     QUALIFY_SHARE, HOT_WEEKS, MATCH_WIN_BONUS, match_mvp, event_leaders)
 
@@ -155,7 +156,16 @@ def home():
                            news=news_for(session.get('current_tier', 'Tier 1'), current_week),
                            standings_data=get_standings_by_division(teams, schedule, all_tourneys, current_week),
                            seed_of=seed_of,
+                           promo=promotion_info(current_week),
                            upcoming=upcoming_info(teams, schedule, all_tourneys, current_week))
+
+def promotion_info(current_week):
+    """Promotion/relegation picture for the current tier as of current_week."""
+    tier = session.get('current_tier', 'Tier 1')
+    data = all_tiers_data[tier]
+    n = results_through(min(current_week, LAST_REGULAR_WEEK))
+    return promotion_picture(tier, AVAILABLE_TIERS, data['teams'], n,
+                             data.get('playoff_rounds', []), current_week)
 
 def upcoming_info(teams, schedule, all_tourneys, current_week):
     """The next week's head-to-head matchups or projected tournament seeds,
@@ -201,6 +211,7 @@ def index():
     playoff_standings = get_playoff_standings(teams, schedule, all_tourneys, current_week)
 
     return render_template("index.html", standings_data=standings_data, playoff_standings=playoff_standings,
+                           promo=promotion_info(current_week),
                            player_of_week=player_of_week_info(current_week))
 
 def player_of_week_info(current_week, runners_up=4):
