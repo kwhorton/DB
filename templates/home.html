@@ -1,8 +1,10 @@
 {% extends "base.html" %}
+{% import "_promotion.html" as pr %}
 
 {% block title %}Home{% endblock %}
 
 {% block head %}
+    {{ pr.styles() }}
     <style>
         .home-container {
             max-width: 1200px;
@@ -154,6 +156,10 @@
 
         .legend a:hover, .empty-note a:hover {
             text-decoration: underline;
+        }
+
+        .promo-wrap {
+            margin-bottom: 24px;
         }
 
         /* Upcoming games */
@@ -363,10 +369,10 @@
                         </thead>
                         <tbody>
                             {% for row in rows %}
-                            <tr>
+                            <tr class="{{ pr.row_class(promo, row.team_name) }}">
                                 <td class="rank">{{ loop.index }}</td>
                                 <td>
-                                    <a href="/team/{{ row.team_name }}">{{ row.team_name }}</a>
+                                    <a href="/team/{{ row.team_name }}">{{ row.team_name }}</a>{{ pr.badge(promo, row.team_name) }}
                                     {% set seed = seed_of.get(row.team_name) %}
                                     {% if seed %}<span class="seed-badge{{ ' bye' if seed <= 4 }}" title="Playoff seed {{ seed }}">{{ seed }}</span>{% endif %}
                                 </td>
@@ -381,9 +387,16 @@
             {% if seed_of %}
             <div class="legend">Badges show current playoff seeds; filled badges get a first-round bye. <a href="/playoffs">Playoff picture →</a></div>
             {% endif %}
+            {% if promo and promo.started %}
+            <div class="legend">▲ UP / ▼ DOWN mark promotion and relegation places{{ ' (projected until Week %d)'|format(promo.last_week) if not promo.final }}.</div>
+            {% endif %}
         </section>
 
         <section>
+            {% if promo %}
+            <div class="section-title"><h2>Promotion &amp; Relegation</h2></div>
+            <div class="promo-wrap">{{ pr.card(promo) }}</div>
+            {% endif %}
             {% if upcoming %}
             <div class="section-title">
                 <h2>Up Next · {% if upcoming.kind == 'playoffs' %}{{ upcoming.name }}{% else %}Week {{ "%g"|format(upcoming.week) }}{% endif %}</h2>
