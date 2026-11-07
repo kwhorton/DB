@@ -10,6 +10,7 @@ from news import league_news
 from promotion import promotion_picture, LAST_REGULAR_WEEK
 from awards import (TierAwards, KINDS, OFFENSE_WEIGHTS, DEFENSE_WEIGHTS,
                     QUALIFY_SHARE, HOT_WEEKS, MATCH_WIN_BONUS, match_mvp, event_leaders)
+from trends import player_trends, team_trends
 
 # Load all tiers data
 with open("season_all_tiers.pkl", "rb") as f:
@@ -312,7 +313,10 @@ def team_page(team_name):
                              players=players,
                              results_html=results_html,
                              is_preseason=False,
-                             team_schedule=None)
+                             team_schedule=None,
+                             trends=team_trends(team, teams,
+                                                tier_awards[session.get('current_tier', 'Tier 1')],
+                                                current_week))
 
 @app.route("/schedule")
 @app.route("/schedule/<week>")
@@ -515,7 +519,8 @@ def player_page(pid):
                          trophies=trophies,
                          race=race,
                          race_through=played_weeks[-1] if played_weeks else None,
-                         season_over=bool(played_weeks) and played_weeks[-1] == awards.weeks[-1])
+                         season_over=bool(played_weeks) and played_weeks[-1] == awards.weeks[-1],
+                         trends=player_trends(awards, pid, current_week))
 
 
 def render_match_animation(match, match_index, game_index, tournament_id=None, playoff_round=None):
