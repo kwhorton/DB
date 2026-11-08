@@ -3,6 +3,7 @@
 {% block title %}{{ team.team_name }}{% endblock %}
 
 {% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/trend_chart.css') }}">
     <style>
         .team-container {
             max-width: 1200px;
@@ -363,5 +364,16 @@
             </div>
             {% endif %}
         </div>
+
+        {% if trends %}
+        <div class="trend-section">
+            <div class="section-title">📈 Season Trends <span class="as-of">through Week {{ trends.labels[-1] }}</span></div>
+            <div id="team-trends"></div>
+        </div>
+        <script src="{{ url_for('static', filename='js/trend_chart.js') }}"></script>
+        <script>
+            TrendChart.mount(document.getElementById('team-trends'), {{ trends|tojson }}, 'trend-metric-team');
+        </script>
+        {% endif %}
     </div>
     {% endblock %}

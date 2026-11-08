@@ -1,0 +1,191 @@
+/* Performance-over-time chart (static/js/trend_chart.js) */
+.trend-section {
+    background: white;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 30px;
+}
+
+.trend-section .as-of {
+    font-size: 13px;
+    font-weight: normal;
+    color: #999;
+    margin-left: 8px;
+}
+
+.trend-chart {
+    font-family: Arial, sans-serif;
+    color: #0b0b0b;
+}
+
+.trend-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+}
+
+.trend-select-label {
+    font-size: 13px;
+    font-weight: bold;
+    color: #52514e;
+}
+
+.trend-select {
+    padding: 7px 10px;
+    border: 1px solid #c3c2b7;
+    border-radius: 5px;
+    background: white;
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
+    cursor: pointer;
+    max-width: 100%;
+}
+
+.trend-select:focus-visible {
+    outline: 2px solid #667eea;
+    outline-offset: 1px;
+}
+
+.trend-description {
+    font-size: 13px;
+    color: #52514e;
+    margin: 6px 0 10px;
+    line-height: 1.4;
+}
+
+.trend-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    font-size: 13px;
+    color: #52514e;
+    margin-bottom: 4px;
+}
+
+.trend-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.trend-legend-key, .trend-tooltip-key {
+    display: inline-block;
+    width: 16px;
+    height: 0;
+    border-top-width: 2px;
+}
+
+.trend-plot {
+    position: relative;
+    width: 100%;
+}
+
+.trend-plot svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+}
+
+.trend-plot svg:focus-visible {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+.trend-axis-text {
+    font-size: 11px;
+    fill: #898781;
+    font-variant-numeric: tabular-nums;
+}
+
+.trend-end-label {
+    font-size: 12px;
+    fill: #52514e;
+}
+
+.trend-tooltip {
+    display: none;
+    position: absolute;
+    pointer-events: none;
+    background: white;
+    border: 1px solid rgba(11,11,11,0.10);
+    border-radius: 6px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+    padding: 8px 10px;
+    font-size: 12px;
+    min-width: 130px;
+    z-index: 5;
+}
+
+.trend-tooltip-title {
+    font-weight: bold;
+    color: #52514e;
+    margin-bottom: 4px;
+}
+
+.trend-tooltip-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 1.6;
+    white-space: nowrap;
+}
+
+.trend-tooltip-value {
+    font-weight: bold;
+    color: #0b0b0b;
+    font-variant-numeric: tabular-nums;
+    min-width: 42px;
+}
+
+.trend-tooltip-name {
+    color: #52514e;
+}
+
+.trend-tooltip-row.is-context .trend-tooltip-value {
+    font-weight: normal;
+    color: #52514e;
+}
+
+.trend-table {
+    margin-top: 10px;
+    font-size: 13px;
+}
+
+.trend-table summary {
+    cursor: pointer;
+    color: #667eea;
+    font-weight: bold;
+}
+
+.trend-table-wrap {
+    overflow-x: auto;
+    margin-top: 8px;
+}
+
+.trend-table table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.trend-table th, .trend-table td {
+    padding: 6px 10px;
+    border-bottom: 1px solid #eee;
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.trend-table th:first-child, .trend-table td:first-child {
+    text-align: left;
+}
+
+.trend-table th {
+    background: #f8f9fa;
+    color: #555;
+}

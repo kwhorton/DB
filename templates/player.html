@@ -2,6 +2,10 @@
 
 {% block title %}{{ player.name|full_name }}{% endblock %}
 
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/trend_chart.css') }}">
+{% endblock %}
+
 {% block content %}
 <style>
     .back-button {
@@ -470,6 +474,17 @@
     </div>
 
 </div>
+
+{% if trends %}
+<div class="trend-section">
+    <div class="section-title">📈 Performance Over Time <span class="as-of">through Week {{ trends.labels[-1] }}</span></div>
+    <div id="player-trends"></div>
+</div>
+<script src="{{ url_for('static', filename='js/trend_chart.js') }}"></script>
+<script>
+    TrendChart.mount(document.getElementById('player-trends'), {{ trends|tojson }}, 'trend-metric-player');
+</script>
+{% endif %}
 
 <div class="history-section">
     <div class="section-title">Stats History (Through Week {{ current_week }})</div>
