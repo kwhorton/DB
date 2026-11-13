@@ -138,7 +138,10 @@ def home():
     n = results_through(current_week)
     seed_of = {team.team_name: seed for seed, team in enumerate(playoff_seeds(teams, n), start=1)} if n else {}
 
+    recent_weeks, recent = recent_results(teams, schedule, current_week)
+
     return render_template("home.html",
+                           recent_weeks=recent_weeks, recent=recent,
                            news=news_for(session.get('current_tier', 'Tier 1'), current_week),
                            standings_data=get_standings_by_division(teams, schedule, all_tourneys, current_week),
                            seed_of=seed_of,

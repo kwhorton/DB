@@ -125,6 +125,30 @@
             text-decoration: underline;
         }
 
+        .mini-table .recent {
+            width: 34px;
+            padding-left: 2px;
+            padding-right: 2px;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .result {
+            display: inline-block;
+            min-width: 28px;
+            padding: 1px 3px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: bold;
+            color: #777;
+            background: #f1f1f1;
+            cursor: default;
+        }
+
+        .result.win { color: #1e7b34; background: #e3f4e6; }
+        .result.top { color: #4c5bd4; background: #eceefc; }
+        .result.loss { color: #b02a37; background: #fbe9eb; }
+
         .seed-badge {
             display: inline-block;
             min-width: 22px;
@@ -365,7 +389,7 @@
                     <div class="card-header">{{ division }}</div>
                     <table class="mini-table">
                         <thead>
-                            <tr><th></th><th>Team</th><th class="num">Pts</th></tr>
+                            <tr><th></th><th>Team</th>{% for w in recent_weeks %}<th class="recent" title="Week {{ w }}">Wk {{ w }}</th>{% endfor %}<th class="num">Pts</th></tr>
                         </thead>
                         <tbody>
                             {% for row in rows %}
@@ -376,6 +400,7 @@
                                     {% set seed = seed_of.get(row.team_name) %}
                                     {% if seed %}<span class="seed-badge{{ ' bye' if seed <= 4 }}" title="Playoff seed {{ seed }}">{{ seed }}</span>{% endif %}
                                 </td>
+                                {% for r in recent.get(row.team_name, []) %}<td class="recent"><span class="result {{ r.kind }}" title="{{ r.title }}">{{ r.text }}</span></td>{% endfor %}
                                 <td class="num">{{ row.score }}</td>
                             </tr>
                             {% endfor %}
@@ -384,6 +409,9 @@
                 </div>
                 {% endfor %}
             </div>
+            {% if recent_weeks %}
+            <div class="legend">Last {{ recent_weeks|length }} results: W/L for head-to-head weeks, finishing place for tournaments. Hover for details.</div>
+            {% endif %}
             {% if seed_of %}
             <div class="legend">Badges show current playoff seeds; filled badges get a first-round bye. <a href="/playoffs">Playoff picture →</a></div>
             {% endif %}

@@ -73,6 +73,44 @@ def get_standings_by_division(teams, schedule, all_tourneys, week):
 
     return dict(sorted(divisions.items()))
 
+def entry_week(i):
+    """The week of the i-th team.score entry (H2H weeks 1-2.5, then tournaments)."""
+    return H2H_WEEKS[i] if i < len(H2H_WEEKS) else FIRST_TOURNEY_WEEK + i - len(H2H_WEEKS)
+
+def recent_results(teams, schedule, week, k=3):
+    """The last k regular-season results through `week`, oldest first:
+    (week labels, {team_name: [{'text', 'title', 'kind'}]}). H2H results show
+    W/L with the set score; tournament results show the finishing place."""
+    n = min(results_through(week), len(H2H_WEEKS) + len(TOURNEY_TYPES),
+            min((len(t.score) for t in teams), default=0))
+    idx = list(range(max(0, n - k), n))
+    labels = ["%g" % entry_week(i) for i in idx]
+
+    out = {}
+    for team in teams:
+        cells = []
+        for i in idx:
+            wk = entry_week(i)
+            if i < len(H2H_WEEKS):
+                m = next(m for m in schedule if m.week == wk and
+                         team.team_name in (m.team1.team_name, m.team2.team_name))
+                home = m.team1.team_name == team.team_name
+                mine, theirs = m.match_score if home else m.match_score[::-1]
+                opp = m.team2 if home else m.team1
+                won = mine > theirs
+                cells.append({'text': 'W' if won else 'L',
+                              'title': f"Week {wk:g}: {'W' if won else 'L'} {mine}-{theirs} "
+                                       f"{'at' if home else 'vs'} {opp.team_name}",
+                              'kind': 'win' if won else 'loss'})
+            else:
+                place = int(8 - team.score[i] / 3)
+                cells.append({'text': ordinal(place),
+                              'title': f"Week {wk:g}: {ordinal(place)} in "
+                                       f"{TOURNEY_TYPES[i - len(H2H_WEEKS)]} tournament",
+                              'kind': 'win' if place == 1 else ('top' if place <= 3 else 'loss' if place >= 6 else '')})
+        out[team.team_name] = cells
+    return labels, out
+
 def get_playoff_standings(teams, schedule, all_tourneys, current_week):
     """Playoff picture: the 12 seeds in seed order (division leaders plus the
     next 8, all ranked by record), then everyone else in ranked order."""
