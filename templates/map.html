@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}Team Map{% endblock %}
+
+{% block head %}
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <style>
+        .map-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .map-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .map-header h1 {
+            color: #333;
+            font-size: 28px;
+        }
+
+        .map-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .map-controls select {
+            padding: 6px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        #teamMap {
+            height: 640px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .map-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 20px;
+            margin-top: 12px;
+            color: #333;
+            align-items: center;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 500;
+        }
+
+        .legend-swatch {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.35);
+        }
+
+        .legend-count {
+            color: #777;
+            font-weight: normal;
+        }
+
+        .map-note {
+            margin-top: 8px;
+            color: #777;
+            font-size: 13px;
+        }
+
+        .team-label {
+            background: rgba(255,255,255,0.9);
+            border: none;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            font-size: 11px;
+            font-weight: bold;
+            padding: 1px 5px;
+        }
+
+        .team-label::before {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            #teamMap {
+                height: 480px;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="map-container">
+    <div class="map-header">
+        <h1>Team Map</h1>
+        <div class="map-controls">
+            <label for="mapTierSelect">Tier:</label>
+            <select id="mapTierSelect">
+                <option value="all">All Tiers</option>
+                {% for tier in available_tiers %}
+                <option value="{{ tier }}" {% if current_tier == tier %}selected{% endif %}>{{ tier }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <div id="teamMap"></div>
+
+    <div class="map-legend" id="mapLegend"></div>
+    <div class="map-note">Click a team to open its page. Zoom in to see team names; zoom out to find Alaska and Hawaii.</div>
+    {% if missing %}
+    <div class="map-note">No map location yet for: {{ missing|join(', ') }}</div>
+    {% endif %}
+</div>
+
+<script>
+    const TEAMS = {{ teams|tojson }};
+    const DIVISIONS = {{ divisions|tojson }};
+    const PALETTE = {East: '#2563eb', Midwest: '#16a34a', South: '#dc2626', West: '#d97706'};
+    const EXTRA = ['#7c3aed', '#0891b2', '#db2777', '#4b5563'];
+    const colorOf = {};
+    DIVISIONS.forEach((d, i) => { colorOf[d] = PALETTE[d] || EXTRA[i % EXTRA.length]; });
+
+    const LABEL_ZOOM = 6;
+    const map = L.map('teamMap', {worldCopyJump: true}).setView([39.5, -96], 4);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 12,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    const layer = L.layerGroup().addTo(map);
+
+    function draw(tier) {
+        layer.clearLayers();
+        const shown = TEAMS.filter(t => tier === 'all' || t.tier === tier);
+        const showLabels = map.getZoom() >= LABEL_ZOOM;
+
+        shown.forEach(t => {
+            const marker = L.circleMarker([t.lat, t.lng], {
+                radius: 8,
+                color: '#fff',
+                weight: 2,
+                fillColor: colorOf[t.division],
+                fillOpacity: 0.95
+            });
+            const label = tier === 'all' ? `${t.name} (${t.tier}, ${t.division})` : `${t.name} (${t.division})`;
+            marker.bindTooltip(showLabels ? t.name : label, {
+                direction: 'top', offset: [0, -8],
+                permanent: showLabels, className: showLabels ? 'team-label' : ''
+            });
+            marker.on('click', () => { window.location.href = t.url; });
+            layer.addLayer(marker);
+        });
+
+        const counts = {};
+        shown.forEach(t => { counts[t.division] = (counts[t.division] || 0) + 1; });
+        document.getElementById('mapLegend').innerHTML = DIVISIONS.map(d =>
+            `<span class="legend-item"><span class="legend-swatch" style="background:${colorOf[d]}"></span>` +
+            `${d} <span class="legend-count">(${counts[d] || 0})</span></span>`
+        ).join('');
+    }
+
+    function fit(tier) {
+        // Frame the mainland teams; Alaska and Hawaii would zoom the map far out
+        const pts = TEAMS.filter(t => (tier === 'all' || t.tier === tier) && t.lng > -140)
+                         .map(t => [t.lat, t.lng]);
+        if (pts.length) map.fitBounds(pts, {padding: [30, 30]});
+    }
+
+    const select = document.getElementById('mapTierSelect');
+    select.addEventListener('change', () => { fit(select.value); draw(select.value); });
+
+    let labelsOn = map.getZoom() >= LABEL_ZOOM;
+    map.on('zoomend', () => {
+        const on = map.getZoom() >= LABEL_ZOOM;
+        if (on !== labelsOn) { labelsOn = on; draw(select.value); }
+    });
+
+    fit(select.value);
+    labelsOn = map.getZoom() >= LABEL_ZOOM;
+    draw(select.value);
+</script>
+{% endblock %}

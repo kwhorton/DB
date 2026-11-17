@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, session
+from flask import Flask, render_template, request, session, url_for
 import pickle
 from show_results import *
 from show_standings import *
@@ -11,6 +11,7 @@ from promotion import promotion_picture, LAST_REGULAR_WEEK
 from awards import (TierAwards, KINDS, OFFENSE_WEIGHTS, DEFENSE_WEIGHTS,
                     QUALIFY_SHARE, HOT_WEEKS, MATCH_WIN_BONUS, match_mvp, event_leaders)
 from trends import player_trends, team_trends
+from team_locations import TEAM_LOCATIONS
 
 # Load all tiers data
 with open("season_all_tiers.pkl", "rb") as f:
@@ -816,6 +817,24 @@ def awards_page():
                            qualify_pct=round(QUALIFY_SHARE * 100),
                            postseason=postseason,
                            has_playoffs=bool(rounds))
+
+
+@app.route('/map')
+def map_page():
+    """Every team pinned on a map, colored by division, filterable by tier."""
+    teams = []
+    missing = []
+    for tier in AVAILABLE_TIERS:
+        for team in all_tiers_data[tier]['teams']:
+            loc = TEAM_LOCATIONS.get(team.team_name)
+            if loc is None:
+                missing.append(team.team_name)
+                continue
+            teams.append({'name': team.team_name, 'tier': tier, 'division': team.division,
+                          'lat': loc[0], 'lng': loc[1],
+                          'url': url_for('team_page', team_name=team.team_name, set_tier=tier)})
+    divisions = sorted({t['division'] for t in teams})
+    return render_template('map.html', teams=teams, divisions=divisions, missing=missing)
 
 
 if __name__ == "__main__":
