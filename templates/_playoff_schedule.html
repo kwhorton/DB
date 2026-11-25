@@ -1,0 +1,372 @@
+{# Playoff round on the schedule page; included by wkschedule.html with `playoff` and `show_results`. #}
+<style>
+    .po-intro {
+        text-align: center;
+        color: #666;
+        font-size: 14px;
+        margin: -15px 0 20px;
+    }
+
+    .po-intro a {
+        color: #667eea;
+        font-weight: bold;
+        text-decoration: none;
+    }
+
+    .po-controls {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 25px;
+    }
+
+    .po-controls button {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 5px;
+        font-size: 13px;
+        font-weight: bold;
+        color: white;
+        cursor: pointer;
+    }
+
+    .po-stage-title {
+        font-size: 14px;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #555;
+        margin: 0 0 12px;
+        padding-bottom: 6px;
+        border-bottom: 2px solid #e0e0e0;
+    }
+
+    .po-match-label {
+        display: block;
+        font-size: 13px;
+        font-weight: normal;
+        opacity: 0.9;
+        margin-bottom: 8px;
+    }
+
+    .po-tbd {
+        color: #999;
+        font-style: italic;
+        font-weight: normal;
+    }
+
+    .po-seed {
+        color: #999;
+        font-size: 12px;
+        margin-right: 4px;
+    }
+
+    .po-game {
+        width: 34px;
+        color: #bbb;
+    }
+
+    .po-game.won {
+        color: #667eea;
+    }
+
+    .po-row.winner .team-name-row {
+        font-weight: bold;
+    }
+
+    .po-summary {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        padding: 20px;
+        display: flex;
+        gap: 40px;
+        flex-wrap: wrap;
+        font-size: 14px;
+        margin-bottom: 30px;
+    }
+
+    .po-summary h4 {
+        font-size: 12px;
+        text-transform: uppercase;
+        color: #555;
+        margin: 0 0 6px;
+    }
+
+    .po-summary ol, .po-summary ul {
+        margin: 0;
+        padding-left: 20px;
+        line-height: 1.6;
+    }
+</style>
+
+{% set round_name = playoff.name %}
+{% if not playoff.has_playoffs %}
+    <div class="no-data">This season was simulated without playoffs. Rerun main.py to play them.</div>
+{% elif not playoff.field_known %}
+    <div class="no-data">
+        The {{ round_name }} field is set once {% if playoff.num == 1 %}the regular season ends{% else %}the previous round has been played{% endif %}.
+        <a href="{{ url_for('playoffs_page') }}">See the playoff picture →</a>
+    </div>
+{% else %}
+    <div class="po-intro">
+        Best-of-5 matches, in the order they're played.
+        {% if show_results %}Later matches show their teams once the matches feeding them have been revealed.{% endif %}
+        <a href="{{ url_for('playoffs_page') }}">Full bracket →</a>
+    </div>
+
+    {% if show_results %}
+    <div class="po-controls">
+        <button class="toggle-scores" onclick="poShowAll()">Show All Results</button>
+        <button class="reset-game" onclick="poResetAll()">Reset All</button>
+    </div>
+    {% endif %}
+
+    {% for stage in playoff.stages %}
+    <div class="po-stage-title">{{ stage.label }}</div>
+    <div class="matches-container">
+        {% for m in stage.matches %}
+        <table class="event-table po-match" data-match="{{ m.index }}" data-mode="hidden" data-shown="0"
+               data-games="{{ m.games | tojson | forceescape }}"
+               {% if m.rematch %}data-rematch="{{ m.team1.feeder.match }}" style="display: none;"{% endif %}>
+            <thead>
+                <tr>
+                    <th colspan="100%">
+                        <span class="po-match-label">Match {{ m.index + 1 }} · Best of 5</span>
+                        {% if show_results %}
+                        <button class="watch-animation po-watch" onclick="window.location.href='{{ url_for('animate_playoff_match', round_num=playoff.num, match_index=m.index) }}'">
+                            🎬 Watch Animation
+                        </button>
+                        <div class="buttons-group">
+                            <button class="toggle-scores" onclick="poToggle(this)">Show Scores</button>
+                            <button class="next-game" onclick="poNextGame(this)">Next Game</button>
+                            <button class="reset-game" onclick="poReset(this)" style="display: none;">Reset</button>
+                        </div>
+                        {% else %}
+                        <div class="future-match-notice">Match scheduled</div>
+                        {% endif %}
+                    </th>
+                </tr>
+                <tr>
+                    <th>Team</th>
+                    {% if show_results %}
+                    <th class="score-column po-score" style="display: none;">Games</th>
+                    {% for g in m.games %}
+                    <th class="score-column po-score po-gcol" data-g="{{ loop.index0 }}" style="display: none;">G{{ loop.index }}</th>
+                    {% endfor %}
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in [m.team1, m.team2] %}
+                {% set side = loop.index %}
+                <tr class="po-row" data-side="{{ side }}">
+                    <td class="team-col po-slot" {% if t.feeder %}data-feeder="{{ t.feeder.match }}"{% endif %}>
+                        {% if t.feeder %}
+                        <div class="team-name-row po-tbd">{{ 'Winner' if t.feeder.won else 'Loser' }} of Match {{ t.feeder.match + 1 }}</div>
+                        {% endif %}
+                        {% if show_results or not t.feeder %}
+                        <div class="po-real" {% if t.feeder %}style="display: none;"{% endif %}>
+                            <div class="team-name-row"><span class="po-seed">{{ t.seed }}</span>{{ t.team_name }}</div>
+                            <div class="team-info-row">
+                                Seed #{{ t.seed }} |
+                                Score: {{ t.score }} |
+                                {{ t.division }} |
+                                Rating: {{ "%.2f"|format(t.rating) }}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </td>
+                    {% if show_results %}
+                    <td class="score-column po-score po-ms" style="display: none;">0</td>
+                    {% for g in m.games %}
+                    <td class="score-column po-score po-gcol po-game {% if g == side %}won{% endif %}" data-g="{{ loop.index0 }}" style="display: none;">{{ '●' if g == side else '○' }}</td>
+                    {% endfor %}
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+            {% if show_results and m.mvp %}
+            <tfoot>
+                <tr class="mvp-row" style="display: none;">
+                    <td colspan="100%">
+                        <span class="mvp-badge">⭐ Match MVP</span>
+                        <a class="mvp-name" href="/player/{{ m.mvp.pid }}">{{ m.mvp.name }}</a>
+                        <span class="mvp-detail">{{ m.mvp.team }} · {{ m.mvp.stat_line }} · {{ "%+.1f"|format(m.mvp.overall) }} impact</span>
+                    </td>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+        {% endfor %}
+    </div>
+    {% endfor %}
+
+    {% if show_results %}
+    <div class="po-summary" id="poSummary" style="display: none;">
+        {% if playoff.finish_order %}
+        <div>
+            <h4>Final standings</h4>
+            <ol>
+                {% for t in playoff.finish_order %}
+                <li><span class="po-seed">({{ t.seed }})</span>{{ t.team_name }}</li>
+                {% endfor %}
+            </ol>
+        </div>
+        {% else %}
+        <div>
+            <h4>Advance</h4>
+            <ul>
+                {% for t in playoff.advancers %}
+                <li><span class="po-seed">({{ t.seed }})</span>{{ t.team_name }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div>
+            <h4>Eliminated</h4>
+            <ul>
+                {% for t in playoff.eliminated %}
+                <li><span class="po-seed">({{ t.seed }})</span>{{ t.team_name }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        const poCards = Array.from(document.querySelectorAll('.po-match'));
+        const poByIndex = {};
+        poCards.forEach(card => { poByIndex[card.dataset.match] = card; });
+
+        function poGames(card) {
+            return JSON.parse(card.dataset.games);
+        }
+
+        // Games won by each side among the first `shown` games
+        function poTally(card, shown) {
+            const tally = [0, 0];
+            poGames(card).slice(0, shown).forEach(w => tally[w - 1]++);
+            return tally;
+        }
+
+        function poComplete(card) {
+            if (!card) return false;
+            const mode = card.dataset.mode;
+            if (mode === 'final') return true;
+            if (mode !== 'progressive') return false;
+            const shown = parseInt(card.dataset.shown);
+            const tally = poTally(card, shown);
+            return tally[0] === 3 || tally[1] === 3 || shown >= poGames(card).length;
+        }
+
+        // Matches are in the order played and feeders always come earlier,
+        // so one pass in order settles every dependency
+        function poRender() {
+            poCards.forEach(card => {
+                if (card.dataset.rematch !== undefined) {
+                    const show = poComplete(poByIndex[card.dataset.rematch]);
+                    card.style.display = show ? '' : 'none';
+                    if (!show) card.dataset.mode = 'hidden';
+                }
+
+                let ready = true;
+                card.querySelectorAll('.po-slot').forEach(slot => {
+                    const known = slot.dataset.feeder === undefined ||
+                                  poComplete(poByIndex[slot.dataset.feeder]);
+                    ready = ready && known;
+                    const tbd = slot.querySelector('.po-tbd');
+                    const real = slot.querySelector('.po-real');
+                    if (tbd) tbd.style.display = known ? 'none' : '';
+                    if (real) real.style.display = known ? '' : 'none';
+                });
+                if (!ready) {
+                    card.dataset.mode = 'hidden';
+                    card.dataset.shown = 0;
+                }
+
+                const mode = card.dataset.mode;
+                const games = poGames(card);
+                const shown = mode === 'final' ? games.length : parseInt(card.dataset.shown);
+                const tally = poTally(card, shown);
+                const done = poComplete(card);
+
+                card.querySelectorAll('.po-score').forEach(cell => {
+                    let visible = mode !== 'hidden';
+                    if (visible && cell.dataset.g !== undefined) {
+                        visible = parseInt(cell.dataset.g) < shown;
+                    }
+                    cell.style.display = visible ? '' : 'none';
+                });
+                card.querySelectorAll('.po-ms').forEach((cell, i) => { cell.textContent = tally[i]; });
+                card.querySelectorAll('.po-row').forEach(row => {
+                    row.classList.toggle('winner', done && tally[row.dataset.side - 1] === 3);
+                });
+                card.querySelectorAll('.mvp-row').forEach(row => { row.style.display = done ? '' : 'none'; });
+
+                const toggle = card.querySelector('.toggle-scores');
+                const next = card.querySelector('.next-game');
+                const reset = card.querySelector('.reset-game');
+                const watch = card.querySelector('.po-watch');
+                toggle.disabled = !ready;
+                toggle.textContent = mode === 'hidden' ? 'Show Scores' : 'Hide Scores';
+                next.disabled = !ready || (done && mode === 'progressive');
+                next.textContent = done && mode === 'progressive' ? 'Match Complete' : 'Next Game';
+                reset.style.display = mode === 'progressive' ? 'inline-block' : 'none';
+                watch.style.display = ready ? '' : 'none';
+            });
+
+            const summary = document.getElementById('poSummary');
+            if (summary) summary.style.display = poCards.every(poComplete) ? '' : 'none';
+        }
+
+        function poToggle(button) {
+            const card = button.closest('.po-match');
+            if (card.dataset.mode === 'hidden') {
+                card.dataset.mode = 'final';
+            } else {
+                card.dataset.mode = 'hidden';
+                card.dataset.shown = 0;
+            }
+            poRender();
+        }
+
+        function poNextGame(button) {
+            const card = button.closest('.po-match');
+            if (card.dataset.mode !== 'progressive') {
+                card.dataset.mode = 'progressive';
+                card.dataset.shown = 0;
+            }
+            if (!poComplete(card)) {
+                card.dataset.shown = parseInt(card.dataset.shown) + 1;
+            }
+            poRender();
+        }
+
+        function poReset(button) {
+            const card = button.closest('.po-match');
+            card.dataset.mode = 'hidden';
+            card.dataset.shown = 0;
+            poRender();
+        }
+
+        function poShowAll() {
+            // In order, so each match's teams are known before it is revealed
+            poCards.forEach(card => {
+                poRender();
+                if (card.style.display !== 'none') card.dataset.mode = 'final';
+            });
+            poRender();
+        }
+
+        function poResetAll() {
+            poCards.forEach(card => {
+                card.dataset.mode = 'hidden';
+                card.dataset.shown = 0;
+            });
+            poRender();
+        }
+
+        poRender();
+    </script>
+    {% endif %}
+{% endif %}

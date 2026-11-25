@@ -334,6 +334,11 @@ def wkschedule(week = None):
     
     week_num = float(week) if week is not None else 1
 
+    if week_num in PLAYOFF_WEEKS:
+        return render_template('wkschedule.html', week=week_num, is_tournament=False,
+                               is_playoffs=True, playoff=playoff_week_info(week_num, current_week),
+                               show_results=week_num <= current_week, tourney_show=None)
+
     # Determine if results should be shown
     show_results = week_num <= current_week
     tourney_show = True if show_results else week_num not in [7, 11, 14]
@@ -401,6 +406,81 @@ def wkschedule(week = None):
         return render_template('wkschedule.html', week=week_num, is_tournament=True,
                                tournaments=tournaments, show_results=show_results,
                                tourney_show=tourney_show)
+
+def playoff_week_info(week_num, current_week):
+    """One playoff round for the schedule page, match by match in the order
+    played. A team that got to a match by winning or losing an earlier match
+    of the round carries that match as its feeder, so the page can show
+    "Winner of Match 3" until that match's result has been revealed."""
+    tier_data = get_current_tier_data()
+    teams = tier_data['teams']
+    rounds = tier_data.get('playoff_rounds', [])
+    round_num = PLAYOFF_WEEKS.index(week_num) + 1
+    info = {'num': round_num, 'name': PLAYOFF_ROUND_NAMES[round_num - 1],
+            'has_playoffs': bool(rounds), 'field_known': False, 'played': False,
+            'stages': [], 'advancers': [], 'eliminated': [], 'finish_order': []}
+    if not rounds:
+        return info
+    rnd = rounds[round_num - 1]
+
+    # Each round's field is set once the one before it has been played
+    prev_week = PLAYOFF_WEEKS[round_num - 2] if round_num > 1 else LAST_REGULAR_WEEK
+    info['field_known'] = current_week >= prev_week
+    info['played'] = week_num <= current_week
+    if not info['field_known']:
+        return info
+
+    seed_of = {team: seed for seed, team in enumerate(playoff_seeds(teams), start=1)}
+    rating_week = week_num if info['played'] else rating_week_for(current_week)
+
+    def entry(team):
+        return {'seed': seed_of[team], 'team_name': team.team_name}
+
+    def side(team, feeder):
+        return dict(entry(team),
+                    score=sum(team.score[:results_through(LAST_REGULAR_WEEK)]),
+                    division=team.division,
+                    rating=team_rating(team, rating_week),
+                    feeder=feeder)
+
+    matches = []
+    for i, (m, label) in enumerate(zip(rnd.matches, rnd.labels)):
+        feeders = []
+        for team in (m.team1, m.team2):
+            # The team's latest earlier match in this round, and how it went
+            prev = next((j for j in range(i - 1, -1, -1)
+                         if team in (rnd.matches[j].team1, rnd.matches[j].team2)), None)
+            if prev is None:
+                feeders.append(None)
+            else:
+                pm = rnd.matches[prev]
+                won = (pm.winner == 1) == (team is pm.team1)
+                feeders.append({'match': prev, 'won': won})
+        # A rematch (Championship, game 2) only exists because of how the
+        # match before it went, so it stays hidden until that is revealed
+        rematch = (all(feeders) and feeders[0]['match'] == feeders[1]['match'])
+        if rematch and not info['played']:
+            continue
+        matches.append({
+            'index': i,
+            'label': label,
+            'team1': side(m.team1, feeders[0]),
+            'team2': side(m.team2, feeders[1]),
+            'rematch': rematch,
+            'score': m.match_score,
+            'winner': m.winner,
+            'games': [g.winner for g in m.games],
+            'mvp': match_mvp_info(m) if info['played'] else None,
+        })
+    info['stages'] = [{'label': label, 'matches': list(group)}
+                      for label, group in groupby(matches, key=lambda m: m['label'])]
+
+    if info['played']:
+        info['advancers'] = [entry(t) for t in sorted(rnd.advancers, key=seed_of.get)]
+        info['eliminated'] = [entry(t) for t in rnd.team_list
+                              if t not in rnd.advancers and rnd.advancers]
+        info['finish_order'] = [entry(t) for t in rnd.finish_order]
+    return info
 
 @app.route('/tournament/<int:tournament_id>')
 def view_tournament(tournament_id):
