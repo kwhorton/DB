@@ -409,12 +409,17 @@
                 <option value="14" {% if week == 14 %}selected{% endif %}>Week 14</option>
                 <option value="15" {% if week == 15 %}selected{% endif %}>Week 15</option>
                 <option value="16" {% if week == 16 %}selected{% endif %}>Week 16</option>
+                <option value="17" {% if week == 17 %}selected{% endif %}>Playoffs R1</option>
+                <option value="18" {% if week == 18 %}selected{% endif %}>Playoffs R2</option>
+                <option value="19" {% if week == 19 %}selected{% endif %}>Final Four</option>
             </select>
         </div>
 
-        <div class="page-title">Week {{ week }} Schedule</div>
+        <div class="page-title">{% if is_playoffs %}Week {{ "%g"|format(week) }} · {{ playoff.name }}{% else %}Week {{ week }} Schedule{% endif %}</div>
 
-        {% if is_tournament %}
+        {% if is_playoffs %}
+            {% include "_playoff_schedule.html" %}
+        {% elif is_tournament %}
             <!-- Tournament Week - Show list of tournaments -->
             <div class="tournaments-grid">
                 {% for tournament in tournaments %}
